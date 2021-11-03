@@ -9,6 +9,9 @@ if (!require("httr")) install.packages("httr")
 if (!require("rlist")) install.packages("rlist")
 if (!require("tidyverse")) install.packages("tidyverse")
 if (!require("naniar")) install.packages("naniar")
+if (!require("foreach")) install.packages("foreach")
+#if (!require("doMC")) install.packages("doMC")
+
 
 #install.packages('spotifyr')
 
@@ -19,6 +22,8 @@ library(rlist)
 library(tidyverse)
 library(naniar)
 library(geniusr)
+library(foreach)
+#library(doMC)
 
 
 Sys.setenv(SPOTIFY_CLIENT_ID = "a9fc91d2beb445c5869d0ea04496f606")
@@ -109,6 +114,14 @@ get_lyrics_from_combination <- function(keyword) {
 
   song_info <- geniusr::search_genius(search_term = keyword)
   
+
+  if (length(song_info$content) == 0) {
+    
+    lyrics <- "NaN"
+    
+  } else {
+    
+  
   songId <- song_info$content[[1]]$id
   
   # lyrics from song id 
@@ -117,17 +130,20 @@ get_lyrics_from_combination <- function(keyword) {
   # post-processing
   lyrics_b <- lyrics_a$line
   lyrics <- paste(unlist(t(lyrics_b)), collapse = " ")
-  
+  }
   return(lyrics)
     
 }
 
+
+
 #get_lyrics_from_combination("LadyGaga Pokerface")
 #get_lyrics_from_combination("Farruko  Pepas")
 #get_lyrics_from_combination("Nelly Furtado  Maneater")
-
+#get_lyrics_from_combination()
 
 ## sometimes, only "" is returned. Thus, using the latter is better!
+
 
 get_lyrics_from_combination_safely <- function(keyword) {
   repeat {
@@ -146,18 +162,26 @@ get_lyrics_from_combination_safely("Wizkid Essence")  # nice :D
 ### getting song title & artist ### 
 
 get_title_artist <- function(keyword) {
-  # keyowrd has to be string !
+  # keyword has to be string !
   # using genius API
   
-  song_info <- geniusr::search_genius(search_term = keyword)
-  
-  artist <- song_info$content[[1]]$primary_artist$name # for artist
-  title <- song_info$content[[1]]$title # for title
-  
-  all_info <- list(artist, title)
-  
+    song_info <- geniusr::search_genius(search_term = keyword)
+    
+    if (length(song_info$content) == 0) {
+      
+      all_info <- c("NaN", "NaN")
+      
+    } else {
+    
+    artist <- song_info$content[[1]]$primary_artist$name # for artist
+    title <- song_info$content[[1]]$title # for title
+    
+    all_info <- list(artist, title)
+    }
   return(all_info)
 }
+
+
 
 
 #aa <- get_title_artist("Wizkid Essence")
@@ -193,11 +217,15 @@ get_info_tibble <- function(songs) {
   
   for (i in 1:length(songs) ) {
     
+    
     artist_title <- get_title_artist(songs[i])
+
+    
     tibble_1[i,1] <- artist_title[[1]]
     tibble_1[i,2] <- artist_title[[2]]
     
     tibble_1[i,3] <- get_lyrics_from_combination_safely(songs[i])
+    
     
     tibble_1[i,4] <- nan_wrapper(get_genre_from_combination(songs[i])[[1]])
       }  
@@ -205,6 +233,8 @@ get_info_tibble <- function(songs) {
   return(tibble_1)
   
 }
+
+
 
 
 #  one without lyrics, one with no genre

@@ -13,7 +13,7 @@
 ### Aufbau Shiny-App:
 
 #### Reiter
-> Sentiment Analysis, Happy/Sad-Score over time and Genre
+> Sentiment Analysis, Happy/Sad-Score over time and Genre (Saisonalitäten erkennbar? Große Gesellschaftliche Ereignisse erkennbar?)
 
 #### Reiter 
 > Topic Analysis, um welche Themen ging es wann? (siehe To Do Stichpunkt 1)
@@ -24,7 +24,14 @@
 #### Reiter 
 > Länge/Komplexität over time and Genre
 
-(Reiter - Quiz auf Word Cloud Basis, gegeben die Wordcloud eines zufälligen Liedes und vier Antwortmöglichkeiten, welches Lied wird dargestellt?)
+#### Reiter (under Discussion)
+> Quiz auf Word Cloud Basis, gegeben die Wordcloud eines zufälligen Liedes und vier Antwortmöglichkeiten, welches Lied wird dargestellt?)
 
 
+
+
+### Other
+
+- Automatisierte Aktualisierung der Charts jede Woche (Stichpunkt Sys.sleep(7x24) -> neues Scraping)
+- Nochmal einlesen Shiny-App auf Uni-Server hosten
 

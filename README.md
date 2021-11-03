@@ -5,9 +5,9 @@
 - In NER einlesen, Fokus: Themen aus Songs extrahieren      -> Leo
 - Zuordnung der Songs + Artists zu Genre (wie und woher?)
 - Datensätze erweitern (Kaggle: 1999-2019, Nicos Scraping: 2019-2021, Billboard package: 1960-2016)   -> Nico
-    1 Billboard scrapen, nur song name, artist, week, platzierung
-    2 Genres zu allen Liedern holen
-    3 Lyrics zu allen Liedern holen (über Genius package/API)
+1 Billboard scrapen, nur song name, artist, week, platzierung
+2 Genres zu allen Liedern holen
+3 Lyrics zu allen Liedern holen (über Genius package/API)
 
 
 ### Aufbau Shiny-App:

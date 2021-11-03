@@ -9,7 +9,7 @@
 
 ### Aufbau Shiny-App:
 
-> Reiter - Sentiment Analysis, Happy/Sad-Score over time and Genre
+Reiter > Sentiment Analysis, Happy/Sad-Score over time and Genre
 
 Reiter - Topic Analysis, um welche Themen ging es wann? (siehe To Do Stichpunkt 1)
 

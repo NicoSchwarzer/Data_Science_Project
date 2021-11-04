@@ -2,6 +2,8 @@
 ## Web Scraping Billboard first go  ##
 ######################################
 
+setwd("C:\\Users\\Nico\\Documents\\Uni\\3. Sem\\DS Projekt\\Code_and_Data")
+
 
 ### This file serves to obtain artist and song information from the Billboard Top 100 for every week
 ### If this has not been done before!
@@ -11,11 +13,13 @@
 if (!require("rvest")) install.packages("rvest")
 if (!require("lubridate")) install.packages("lubridate")
 if (!require("writexl")) install.packages("writexl")
+if (!require("tidyverse")) install.packages("tidyverse")
 
 
 library(lubridate)
 library(rvest)
 library(writexl)
+library(tidyverse)
 
 
 ### Set-Up of this script ### 
@@ -130,7 +134,7 @@ last_date <- get_last_date(base_url, x_path_date)
 vec_all_dates <- seq(as.Date("1960-01-02"), last_date, by="days")
 
 # every day for every two weaks at that week's Saturday
-vec_14_days <- vec_all_dates[seq(1, length(vec_all_dates), 14)]
+vec_7_days <- vec_all_dates[seq(1, length(vec_all_dates), 7)]
 
 
 ##############################
@@ -142,16 +146,21 @@ vec_14_days <- vec_all_dates[seq(1, length(vec_all_dates), 14)]
 
 songs <- c()
 artists <- c()
-dates <- c()
+dates <- c(vec_7_days[1]) # initialized not empty to ensure data type is passed correctly
+dates <- dates[-1]
+
+
+
 
 
 ## running a big loop to scrape all data
 a <- 1
-len <-length(vec_14_days)
+len <-length(vec_7_days)
+
 
 ## using a while statement togther with sys.sleep to not overload the Page
 
-while (a <= len) {
+while (a <= 2) {
   
   for (i in a:(a+9)) {
     
@@ -170,7 +179,8 @@ while (a <= len) {
     # appending vectors 
     songs <- c(songs, cleaned_data$songs)
     artists <- c(artists, cleaned_data$artists)
-    dates <- c(dates, vec_7_days[i])
+    dates_here <- rep(vec_7_days[i], nrow(cleaned_data))
+    dates <- c(dates, dates_here)
     
   }  
     
@@ -180,21 +190,10 @@ while (a <= len) {
 }
 
 
-# checking if songs are different 1 vs 101 vs 201 etc.  
 
-#all_data_1 <- data.frame(artists, songs)
+# getting one large DF from the results
+df_all_data_billboard <- data.frame(artists, songs, dates)
 
-
-length(vec_7_days)
-
-
-# checking length 
-
-# long loop
-
-
-
-
-  
-
+# saving to csv 
+write.csv(all_data_billboard,"all_data_billboard_weeks.csv")
 

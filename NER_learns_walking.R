@@ -30,12 +30,22 @@ rm(date_split)
 data <- filter(music_data, Year == 2000)
 
 # only keep lyrics and week of chart appearance for now
+data_whole <- select(music_data, c("Lyrics", "Week"))
 data <- select(data, c("Lyrics", "Week"))
 
-# collapse all song texts for every week
+# collapse all song texts for every week (subset)
 week_lyrics <- data %>%
   group_by(Week) %>%
   summarize(text = toString(Lyrics))
+
+# collapse all song texts for every week (whole)
+week_lyrics_whole <- data_whole %>%
+  group_by(Week) %>%
+  summarize(text = toString(Lyrics))
+
+
+
+
 
 ### SHORT WRAP-UP ###
 # week_lyrics now contains all lyrics of all songs as one "big" song-text given the week of
@@ -50,8 +60,6 @@ text_token <- tidytext::unnest_tokens(week_lyrics, word, text)
 # remove stop words, list of stop words given by tidytext package
 text_token <- text_token %>%
   anti_join(tidytext::stop_words, by = "word")
-
-stop_words$word
 
 
 ##############################################
@@ -100,7 +108,50 @@ bi_grams_count %>%
 
 
 
+##############################################
+##### Topic identification #####
+##############################################
+# now applied to the whole (kaggle) dataset from 1999 - 2016
+
+# get length of all the lyrics that week
+song_len <- str_count(week_lyrics_whole$text, "\\w+")
+
+# get number of words related to topics
+love_count <- str_count(week_lyrics_whole$text, c("love|girlfriend|boyfriend"))
+anger_count <- str_count(week_lyrics_whole$text, c("hate|anger|trouble|sad"))
+wanderlust_count <- str_count(week_lyrics_whole$text, c("travel|adventure|nature|excited"))
+money_count <- str_count(week_lyrics_whole$text, c("money|fame|rich"))
+christmas_count <- str_count(week_lyrics_whole$text, c("christmas|presents|santa"))
+
+# make data frame
+topic_df <- data.frame("love" = love_count,
+                       "anger" = anger_count,
+                       "wanderlust" = wanderlust_count,
+                       "money" = money_count,
+                       "christmas" = christmas_count)
+
+# get relative scores
+topic_df <- as.data.frame(apply(topic_df, 2, "/", song_len))
+
+# add date variable
+topic_df$date <- week_lyrics_whole$Week
+
+# make long format
+topic_df_long <- gather(topic_df, love, anger, wanderlust, money, christmas, key = "topic", value = "appearance")
+
+# plot topics over time
+topics_displayed <- c("love", "anger", "wanderlust", "money", "christmas")
+topic_df_long %>%
+  filter(topic %in% topics_displayed) %>%
+  ggplot(aes(x = date, y = appearance)) + 
+  geom_line(aes(color = topic)) +
+  geom_smooth(method = "lm", aes(color = topic), alpha = 0.2, size = 0.1)
+
+
+
+
 
 ## next steps:
+# modify list of stop words
 # n-grams
 # relative appearance over time

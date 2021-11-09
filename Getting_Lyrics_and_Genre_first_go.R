@@ -4,7 +4,7 @@
 
 ## Setting WD all_data_billboard_weeks.csv
 
-#setwd("C:\\Users\\Nico\\Documents\\Uni\\3. Sem\\DS Projekt\\Code_and_Data")
+setwd("C:\\Users\\Nico\\Documents\\Uni\\3. Sem\\DS Projekt\\Code_and_Data")
 
 ## please make sure that the file all_data_billboard_weeks.csv resides here!
 
@@ -109,11 +109,57 @@ get_lyrics_from_combination_safely <- function(keyword) {
 }
 
 
+## function to get acoustic features by keyword
+
+get_acoustic_features <- function(keyword) {
+  # keyword has to be string
+  
+  
+  result_general <- spotifyr::search_spotify(keyword)
+  track_id <- result_general$tracks$items$id[1][1]
+  
+  
+  if (is.null(track_id) == TRUE) { # ensuring consistent data format
+    danceability <- NaN
+    energy <- NaN
+    loudness <- NaN
+    tempo <- NaN
+    duration <- NaN
+    
+  } else {
+    
+    
+    # getting further audio features
+    audio_feautres <- spotifyr::get_track_audio_features(track_id)
+    
+    if (nrow(audio_feautres) != 0) {  # error control 
+      
+      danceability <-   audio_feautres$danceability[1]
+      energy <- audio_feautres$energy
+      loudness <- audio_feautres$loudness
+      tempo <- audio_feautres$tempo
+      duration <- audio_feautres$duration_ms[1] / 1000
+      
+    } else {
+      danceability <- NaN
+      energy <- NaN
+      loudness <- NaN
+      tempo <- NaN
+      duration <- NaN
+    }
+  }
+  
+  all_features <- c(danceability,energy,loudness, tempo,duration)
+  
+  return(all_features)
+  
+}    
+
+
 ## function to get genre by keyword, i.e. artist song combination as a string
 
 
-
-get_genre_from_combination <- function(keyword) {
+get_genre__from_combination <- function(keyword) {
   # keyword has to be string
   
   result_general <- spotifyr::search_spotify(keyword)
@@ -172,37 +218,67 @@ df_all_billboard_weeks_unique <- df_all_billboard_weeks_no_date  %>%
 
 
 
-#############################################
-##  Getting the genre with the spotify API ##
-#############################################
+###################################################################
+##  Getting the genre and acoustic features with the Spotify API ##
+###################################################################
 
+# renaming DF
+df_all_billboard_weeks_unique_with_genre <- df_all_billboard_weeks_unique
 
 ## getting the genres for the unique DF
 
 
-#df_all_billboard_weeks_unique$genre <- lapply(df_all_billboard_weeks_unique$combination, FUN = get_genre_from_combination)
+#df_all_billboard_weeks_unique_with_genre$genre <- lapply(df_all_billboard_weeks_unique_with_genre$combination, FUN = get_genre_from_combination)
 
 
 # defining new column with correct data type 
-df_all_billboard_weeks_unique$genre <- "a"
+df_all_billboard_weeks_unique_with_genre$genre <- "a"
 
-max_iter <- nrow(df_all_billboard_weeks_unique)
+max_iter <- nrow(df_all_billboard_weeks_unique_with_genre)
 
 for (i in 1:max_iter) {
   
   # getting correct genre  
-  df_all_billboard_weeks_unique$genre[i] <- get_genre_from_combination(df_all_billboard_weeks_unique$combination[i][[1]])
+  df_all_billboard_weeks_unique_with_genre$genre[i] <- get_genre_from_combination(df_all_billboard_weeks_unique_with_genre$combination[i][[1]])
   
   # overview for error control
   print(i)
-  print(df_all_billboard_weeks_unique$genre[i])
+  print(df_all_billboard_weeks_unique_with_genre$genre[i])
+  
+}
+
+
+## getting acoustic features for unique DF
+
+# defining new column with correct data type 
+df_all_billboard_weeks_unique_with_genre$danceability <- 0
+df_all_billboard_weeks_unique_with_genre$danceability <- 0
+df_all_billboard_weeks_unique_with_genre$energy <- 0
+df_all_billboard_weeks_unique_with_genre$loadness <- 0
+df_all_billboard_weeks_unique_with_genre$tempo <- 0
+df_all_billboard_weeks_unique_with_genre$duration <- 0
+
+
+for (i in 1:max_iter) {
+  
+  # getting correct acoustic features
+  acoustic_features <- get_acoustic_features(df_all_billboard_weeks_unique_with_genre$combination[i])
+  
+  # assigning fitting value of output vector 
+  df_all_billboard_weeks_unique_with_genre$danceability[i] <- acoustic_features[1]
+  df_all_billboard_weeks_unique_with_genre$energy[i] <- acoustic_features[2]
+  df_all_billboard_weeks_unique_with_genre$loadness[i] <- acoustic_features[3]
+  df_all_billboard_weeks_unique_with_genre$tempo[i] <- acoustic_features[4]
+  df_all_billboard_weeks_unique_with_genre$duration[i] <- acoustic_features[5]
+  
+  # overview for error control
+  print(i)
+  print(df_all_billboard_weeks_unique_with_genre$danceability[i])
   
 }
 
 
 # saving intermediate result 
-
-df_all_billboard_weeks_unique_with_genre_lyrics <- df_all_billboard_weeks_unique
 write.csv(df_all_billboard_weeks_unique_with_genre,"df_all_billboard_weeks_unique_with_genre.csv")
 
 
@@ -249,6 +325,14 @@ for (i in 1:max_iter) {
 
 # saving DF with genre and lyrics
 write.csv(df_all_billboard_weeks_unique_with_genre_lyrics,"df_all_billboard_weeks_unique_with_genre_lyrics.csv")
+
+
+### 
+
+#xx <- read.csv("df_all_billboard_weeks_unique_with_genre_lyrics.csv")
+
+
+
 
 
 

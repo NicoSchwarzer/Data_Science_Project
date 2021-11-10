@@ -2,8 +2,7 @@
 ## Getting Lyrics and Genre  first go  ##
 #########################################
 
-## Setting WD all_data_billboard_weeks.csv
-
+## Setting WD 
 setwd("C:\\Users\\Nico\\Documents\\Uni\\3. Sem\\DS Projekt\\Code_and_Data")
 
 ## please make sure that the file all_data_billboard_weeks.csv resides here!
@@ -327,9 +326,43 @@ for (i in 1:max_iter) {
 write.csv(df_all_billboard_weeks_unique_with_genre_lyrics,"df_all_billboard_weeks_unique_with_genre_lyrics.csv")
 
 
-### 
 
-#xx <- read.csv("df_all_billboard_weeks_unique_with_genre_lyrics.csv")
+### re-merging to the DF containing all charts (not just unique ones) ### 
+
+df_all_billboard_weeks_unique_with_genre_lyrics_no_na <- na.omit(df_all_billboard_weeks_unique_with_genre_lyrics)
+##
+
+df_all_billboard_weeks_unique_with_genre_lyrics_no_na <- df_all_billboard_weeks_unique_with_genre_lyrics_no_na[df_all_billboard_weeks_unique_with_genre_lyrics_no_na$genre != "NAN",]
+df_all_billboard_weeks_unique_with_genre_lyrics_no_na <- df_all_billboard_weeks_unique_with_genre_lyrics_no_na[df_all_billboard_weeks_unique_with_genre_lyrics_no_na$genre != "Nan",]
+##
+df_all_billboard_weeks_unique_with_genre_lyrics_no_na <- df_all_billboard_weeks_unique_with_genre_lyrics_no_na[df_all_billboard_weeks_unique_with_genre_lyrics_no_na$lyrics != "NAN",]
+df_all_billboard_weeks_unique_with_genre_lyrics_no_na <- df_all_billboard_weeks_unique_with_genre_lyrics_no_na[df_all_billboard_weeks_unique_with_genre_lyrics_no_na$lyrics != "Nan",]
+
+
+all_data_billboard_weeks <- read.csv("all_data_billboard_weeks.csv")
+
+
+df_all_billboard_all_weeks_with_genre_lyrics <-merge(x=all_data_billboard_weeks,y=df_all_billboard_weeks_unique_with_genre_lyrics_no_na,by=c("artists", "songs"),all.x=FALSE, all.y=FALSE)
+
+# ordering by date 
+df_all_billboard_all_weeks_with_genre_lyrics <- df_all_billboard_all_weeks_with_genre_lyrics %>%
+  dplyr::arrange(dates)
+
+
+## saving results ##
+
+## unique songs (no nans)
+
+write.csv(df_all_billboard_weeks_unique_with_genre_lyrics_no_na,"df_all_billboard_weeks_unique_with_genre_lyrics_no_na.csv")
+# 10987 uniques 
+
+
+## all songs (no nans)
+write.csv(df_all_billboard_all_weeks_with_genre_lyrics,"df_all_billboard_all_weeks_with_genre_lyrics.csv")
+#
+# 128619 uniques
+
+
 
 
 

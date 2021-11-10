@@ -173,7 +173,7 @@ len <-length(vec_7_days)
 
 ## using a while statement togther with sys.sleep to not overload the Page
 
-while (a <= 2) {
+while (a <= len) {
   
   for (i in a:(a+9)) {
     

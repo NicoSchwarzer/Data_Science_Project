@@ -2,7 +2,8 @@
 ## Web Scraping Billboard first go  ##
 ######################################
 
-setwd("C:\\Users\\Nico\\Documents\\Uni\\3. Sem\\DS Projekt\\Code_and_Data")
+wd <- getwd()
+setwd(wd)
 
 
 ### This file serves to obtain artist and song information from the Billboard Top 100 for every week
@@ -58,10 +59,22 @@ get_last_date <- function(url, x_path_date) {
   
   html_text <- rvest::html_text(xml_nodes_1)
   
-  date_here <- substr(html_text, start = 18, stop = 33)
+  stopping = 25
+  
+  date <- substr(html_text, start = 18, stop = stopping)
+  century_check <- substr(substr_from_right(date, 4), start = 1, stop = 2)
+  
+  ## since the date strings have different strings, this ensrues that all chars belonging to the actual date are retrieved
+  
+  while (century_check != "20") {
+    stopping = stopping + 1
+    date <- substr(html_text, start = 18, stop = stopping)
+    century_check <- substr(substr_from_right(date, 4), start = 1, stop = 2)
+  }
+  
   
   # in correct day format
-  date_format <- lubridate::mdy(date_here)
+  date_format <- lubridate::mdy(date)
   
   return(date_format)
 }
@@ -160,7 +173,7 @@ len <-length(vec_7_days)
 
 ## using a while statement togther with sys.sleep to not overload the Page
 
-while (a <= 2) {
+while (a <= len) {
   
   for (i in a:(a+9)) {
     
@@ -196,4 +209,5 @@ df_all_data_billboard <- data.frame(artists, songs, dates)
 
 # saving to csv 
 write.csv(all_data_billboard,"all_data_billboard_weeks.csv")
+
 

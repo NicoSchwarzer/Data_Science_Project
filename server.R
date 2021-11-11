@@ -1,30 +1,44 @@
-#
-# This is the server logic of a Shiny web application. You can run the
-# application by clicking 'Run App' above.
-#
-# Find out more about building applications with Shiny here:
-#
-#    http://shiny.rstudio.com/
-#
 
+### Server File for the Shiny Web-Application ###
+
+# load packages
 library(shiny)
+library(dplyr)
+library(ggplot2)
+library(shinythemes)
 
-# data <- read.csv("BTC_USD.csv")
-data <- read.csv("BTC_USD.csv")
+# load data
+data <- read.csv("topic_df.csv")
 
+# modify data
+data$date <- as.Date(data$date)
+data$topic <- as.character(data$topic)
 
+## Set up the server function ##
+# i.e. make plots that will be shown #
 
-# Define server logic required to draw a histogram
 shinyServer(function(input, output) {
-    
-    output$oneWeek <- renderPlot({
-        plotData <- data[(nrow(data)-6):nrow(data),]
-        plot(plotData$Close, type = "l")
-    })
-    
-    output$oneYear <- renderPlot({
-        plotData <- data[(nrow(data)-355):nrow(data),]
-        plot(plotData$Close, type = "l")
-    })
-
+  
+  # Topics Plot
+  output$topics_plot <- renderPlot({
+    data %>%
+      filter(topic %in% input$topics_displayed) %>%
+      ggplot(aes(x = date, y = appearance)) + 
+      geom_line(aes(color = topic)) +
+      geom_smooth(method = "lm", aes(color = topic), alpha = 0.2, size = 0.1)
+  })
+  
+  
+  # Topics Plot
+  output$topics_plot2 <- renderPlot({
+    data %>%
+      filter(topic %in% input$topics_displayed2) %>%
+      ggplot(aes(x = date, y = appearance)) + 
+      geom_line(aes(color = topic)) +
+      geom_smooth(method = "lm", aes(color = topic), alpha = 0.2, size = 0.1)
+  })
+  
 })
+
+
+

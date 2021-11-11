@@ -122,25 +122,34 @@ anger_count <- str_count(week_lyrics_whole$text, c("hate|anger|trouble|sad"))
 wanderlust_count <- str_count(week_lyrics_whole$text, c("travel|adventure|nature|excited"))
 money_count <- str_count(week_lyrics_whole$text, c("money|fame|rich"))
 christmas_count <- str_count(week_lyrics_whole$text, c("christmas|presents|santa"))
+happy_count <-  str_count(week_lyrics_whole$text, c("joy|happy|good"))
 
 # make data frame
 topic_df <- data.frame("love" = love_count,
                        "anger" = anger_count,
                        "wanderlust" = wanderlust_count,
                        "money" = money_count,
-                       "christmas" = christmas_count)
+                       "christmas" = christmas_count,
+                       "happy" = happy_count)
 
 # get relative scores
 topic_df <- as.data.frame(apply(topic_df, 2, "/", song_len))
+# topic_df <- as.data.frame(apply(topic_df, 2, log))   ## log scale??
 
 # add date variable
 topic_df$date <- week_lyrics_whole$Week
 
 # make long format
-topic_df_long <- gather(topic_df, love, anger, wanderlust, money, christmas, key = "topic", value = "appearance")
+topic_df_long <- gather(topic_df, love, anger, wanderlust, money, christmas, happy, key = "topic", value = "appearance")
+
+
+#write.csv(topic_df_long,
+#          "C:/Users/leona/Documents/Data_Science_Project/Data/topic_df.csv")
+
+
 
 # plot topics over time
-topics_displayed <- c("love", "anger", "wanderlust", "money", "christmas")
+topics_displayed <- c("love", "anger", "wanderlust", "money", "christmas", "happy")
 topic_df_long %>%
   filter(topic %in% topics_displayed) %>%
   ggplot(aes(x = date, y = appearance)) + 

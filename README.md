@@ -35,3 +35,13 @@
 - Automatisierte Aktualisierung der Charts jede Woche (Stichpunkt Sys.sleep(7x24) -> neues Scraping) x
 - Nochmal einlesen Shiny-App auf Uni-Server hosten x
 
+
+
+## (Possible) Genre Mapping:
+-	Funk, boogie, edm, elekto etc. are classified as „dance“
+-	Chanson, ESC and soul and adult standards are classified as „pop“
+-	Any version of harder rock (punk, grunge etc.) is classified as „rock“
+-	Classical music, instumental soundtracks are classified as  „instrumental“
+-	Any version of Rap and house is classified as „rnb“
+-	Folk music from around the world and children’s music is classified as „folk“
+

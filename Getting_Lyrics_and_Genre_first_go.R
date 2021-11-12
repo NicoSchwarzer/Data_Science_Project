@@ -322,6 +322,9 @@ for (i in 1:max_iter) {
 ## zu kurz (nur 10 character)
 ## sehr viele | oder - oder \ 
 
+
+
+
 # saving DF with genre and lyrics
 write.csv(df_all_billboard_weeks_unique_with_genre_lyrics,"df_all_billboard_weeks_unique_with_genre_lyrics.csv")
 
@@ -342,7 +345,7 @@ df_all_billboard_weeks_unique_with_genre_lyrics_no_na <- df_all_billboard_weeks_
 all_data_billboard_weeks <- read.csv("all_data_billboard_weeks.csv")
 
 
-df_all_billboard_all_weeks_with_genre_lyrics <-merge(x=all_data_billboard_weeks,y=df_all_billboard_weeks_unique_with_genre_lyrics_no_na,by=c("artists", "songs"),all.x=FALSE, all.y=FALSE)
+df_all_billboard_all_weeks_with_genre_lyrics <- merge(x=all_data_billboard_weeks,y=df_all_billboard_weeks_unique_with_genre_lyrics_no_na,by=c("artists", "songs"),all.x=FALSE, all.y=FALSE)
 
 # ordering by date 
 df_all_billboard_all_weeks_with_genre_lyrics <- df_all_billboard_all_weeks_with_genre_lyrics %>%
@@ -358,10 +361,15 @@ write.csv(df_all_billboard_weeks_unique_with_genre_lyrics_no_na,"df_all_billboar
 
 
 ## all songs (no nans)
-write.csv(df_all_billboard_all_weeks_with_genre_lyrics,"df_all_billboard_all_weeks_with_genre_lyrics.csv")
-#
-# 128619 uniques
 
+# the DF shall be saved as "df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED" to indicate that NO cleaning has been done until now 
+
+
+write.csv(df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED,"df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED.csv")
+
+nrow(df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED)
+
+xx1 <- nrow(na.omit(df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED))
 
 
 

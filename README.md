@@ -50,3 +50,6 @@
 1) df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED.csv (with original genres)
 2) df_all_billboard_all_weeks_with_reduced_genre_lyrics_NOT_CLEANED.csv (with re-mapped genres)
 
+Whenever the excel file is changed, one should execute the file "Genres_mapping". This will apply the new mapping and create a new 
+df_all_billboard_all_weeks_with_reduced_genre_lyrics_NOT_CLEANED.csv file. The weekly updating still works and need not be modified!
+

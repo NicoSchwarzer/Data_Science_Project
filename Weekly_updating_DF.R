@@ -273,8 +273,13 @@ get_genre__from_combination <- function(keyword) {
 ###########################
 
 df_all_billboard_all_weeks_with_genre_lyrics <- read.csv("df_all_billboard_all_weeks_with_genre_lyrics.csv")
+df_all_billboard_all_weeks_with_genre_lyrics <- df_all_billboard_all_weeks_with_genre_lyrics[, c("artists", "songs", "dates", "combination", "genre", "lyrics", "danceability", "energy", "loadness", "tempo", "duration")]
 
-# most recent date 
+# making sure right datetime format is set 
+df_all_billboard_all_weeks_with_genre_lyrics$dates <- as.Date(df_all_billboard_all_weeks_with_genre_lyrics$dates)
+
+
+# most recent date from overall DF
 last_date_all_df <- df_all_billboard_all_weeks_with_genre_lyrics$dates[nrow(df_all_billboard_all_weeks_with_genre_lyrics)]
 
 
@@ -282,6 +287,7 @@ last_date_all_df <- df_all_billboard_all_weeks_with_genre_lyrics$dates[nrow(df_a
 ###################################################################
 ## Getting last date from the overall DF and from billboard site ## 
 ###################################################################
+
 
 # the last date (Saturday) from Billboard 
 last_date_bb <- get_last_date(base_url, x_path_date)
@@ -306,90 +312,176 @@ num_weeks_missed <- difftime_cleaned / 7
 
 if (num_weeks_missed != 0)  {
 
-  for (i in 1:num_weeks_missed) {
+  for (i in 0:(num_weeks_missed-1)) {
+    
+      
+    ## appending the vector 
+    missed_date <- last_date_bb - 7*i
+    vec_missed_dates <- c(vec_missed_dates, missed_date)
+    }
+  
+    #######################################
+    ## Scraping charts for missing weeks ##
+    #######################################
     
     
-  ## appending the vector 
-  missed_date <- last_date_bb - 7*i
-  vec_missed_dates <- c(vec_missed_dates, missed_date)
-  }
-
-  
-  ## Scraping charts for missing weeks ##
-
-  len <- length(vec_missed_dates)
-  i <- 1
-  
-  # initializing empty vectors 
-  songs <- c()
-  artists <- c()
-  dates <- c(last_date_bb)[-1] # ensuring correct data type
-  
-  while (i <= len) {
+    len <- length(vec_missed_dates)
+    i <- 1
     
-      # creating fitting url 
-      date_char <- as.character(vec_missed_dates[1])
-      url_final <- paste(base_url, "/", date_char, sep="")
+    # initializing empty vectors 
+    songs <- c()
+    artists <- c()
+    dates <- c(last_date_bb)[-1] # ensuring correct data type
+    
+    while (i <= len) {
       
-      # getting data 
-      scraped_data <- get_charts_list(url_final, x_path_data)
+        # creating fitting url 
+        date_char <- as.character(vec_missed_dates[1])
+        url_final <- paste(base_url, "/", date_char, sep="")
+        
+        # getting data 
+        scraped_data <- get_charts_list(url_final, x_path_data)
+        
+        # cleaning data 
+        cleaned_data <- get_table_from_scraped(scraped_data)
+        
+        # appending vectors 
+        songs <- c(songs, cleaned_data$songs)
+        artists <- c(artists, cleaned_data$artists)
+        
+        dates_here <- rep(vec_missed_dates[i], nrow(cleaned_data))
+        dates <- c(dates, dates_here)
+        
+        i = i + 1
+      }  
       
-      # cleaning data 
-      cleaned_data <- get_table_from_scraped(scraped_data)
+  
+    
+    ## creating a DF from scraped Data 
+    df_all_new_data_billboard <- data.frame(artists, songs, dates)
+    
+    df_all_new_data_billboard$combination <- paste0(df_all_new_data_billboard$artists,"  ",  df_all_new_data_billboard$songs)   # combination ensures  only unique matches
+    
+    
+    ########################################################################
+    ## Dividing into new songs (not in all previos charts) and seen songs ##
+    ########################################################################
+    
+    # combinations with A match in already scraped combinations
+    df_all_new_data_billboard_seen <- df_all_new_data_billboard[df_all_new_data_billboard$combination %in% (df_all_billboard_all_weeks_with_genre_lyrics$combination) ,]
+    
+    # combinations with NO match in already scraped combinations
+    df_all_new_data_billboard_unseen <- df_all_new_data_billboard[!df_all_new_data_billboard$combination %in% (df_all_billboard_all_weeks_with_genre_lyrics$combination) ,]
+
+
+    ##################################
+    ## Getting data for new songs ####
+    ##################################
+    
+    ## getting the respective genres ## 
       
-      # appending vectors 
-      songs <- c(songs, cleaned_data$songs)
-      artists <- c(artists, cleaned_data$artists)
+    df_all_new_data_billboard_unseen$genre <- "a"
+    
+    max_iter <- nrow(df_all_new_data_billboard_unseen)
+       
+    for (i in 1:max_iter) {
+        
+      df_all_new_data_billboard_unseen$genre[i] <- get_genre_from_combination(df_all_new_data_billboard_unseen$combination[i][[1]][1])
+    }
+    
+    # unnesting 
+    df_all_new_data_billboard_unseen <- unnest(df_all_new_data_billboard_unseen, cols = genre)
+    
+    ## getting the respective acoustic features ##  
+  
+    # defining new column with correct data type 
+    df_all_new_data_billboard_unseen$danceability <- 0
+    df_all_new_data_billboard_unseen$danceability <- 0
+    df_all_new_data_billboard_unseen$energy <- 0
+    df_all_new_data_billboard_unseen$loadness <- -1.2
+    df_all_new_data_billboard_unseen$tempo <- 0
+    df_all_new_data_billboard_unseen$duration <- 0
+    
+    
+    # calling max_iter again since the nesting already removed NANs
+    max_iter <- nrow(df_all_new_data_billboard_unseen)
+    
+    for (i in 1:max_iter) {
       
-      dates_here <- rep(vec_missed_dates[i], nrow(cleaned_data))
-      dates <- c(dates, dates_here)
+      # getting correct acoustic features
+      acoustic_features <- get_acoustic_features(df_all_new_data_billboard_unseen$combination[i])
       
-      i = i + 1
-    }  
+      # assigning fitting value of output vector 
+      df_all_new_data_billboard_unseen$danceability[i] <- acoustic_features[1]
+      df_all_new_data_billboard_unseen$energy[i] <- acoustic_features[2]
+      df_all_new_data_billboard_unseen$loadness[i] <- acoustic_features[3]
+      df_all_new_data_billboard_unseen$tempo[i] <- acoustic_features[4]
+      df_all_new_data_billboard_unseen$duration[i] <- acoustic_features[5]
+      
+    }
+    
+    
+    ## getting respective lyrics ## 
+    
+    df_all_new_data_billboard_unseen$lyrics <- "a"
+    
+    for (i in 1:max_iter) {
+      
+      # getting correct genre  
+      df_all_new_data_billboard_unseen$lyrics[i] <- get_lyrics_from_combination_safely(df_all_new_data_billboard_unseen$combination[i])
+    }
+    
+    # all new data with NANs removed
+    
+    df_all_new_data_billboard_unseen <-  na.omit(df_all_new_data_billboard_unseen)
+    
+  
+    #################################
+    ## Getting data for seen songs ##
+    #################################
+    
+    max_iter <- nrow(df_all_new_data_billboard_seen)
+    
+    for (i in 1:max_iter) {
+      
+      # genre
+      df_all_new_data_billboard_seen$genre[i] <- df_all_billboard_all_weeks_with_genre_lyrics$genre[df_all_billboard_all_weeks_with_genre_lyrics$combination == df_all_new_data_billboard_seen$combination[i] ]
+      
+      # acoustic features 
+      df_all_new_data_billboard_seen$danceability[i] <- df_all_billboard_all_weeks_with_genre_lyrics$danceability[df_all_billboard_all_weeks_with_genre_lyrics$combination == df_all_new_data_billboard_seen$combination[i] ]
+      df_all_new_data_billboard_seen$energy[i] <- df_all_billboard_all_weeks_with_genre_lyrics$energy[df_all_billboard_all_weeks_with_genre_lyrics$combination == df_all_new_data_billboard_seen$combination[i] ]
+      df_all_new_data_billboard_seen$loadness[i] <- df_all_billboard_all_weeks_with_genre_lyrics$loadness[df_all_billboard_all_weeks_with_genre_lyrics$combination == df_all_new_data_billboard_seen$combination[i] ]
+      df_all_new_data_billboard_seen$tempo[i] <- df_all_billboard_all_weeks_with_genre_lyrics$tempo[df_all_billboard_all_weeks_with_genre_lyrics$combination == df_all_new_data_billboard_seen$combination[i] ]
+      df_all_new_data_billboard_seen$duration[i] <- df_all_billboard_all_weeks_with_genre_lyrics$duration[df_all_billboard_all_weeks_with_genre_lyrics$combination == df_all_new_data_billboard_seen$combination[i] ]
+      
+      
+      # lyrics 
+      df_all_new_data_billboard_seen$lyrics[i] <- df_all_billboard_all_weeks_with_genre_lyrics$lyrics[df_all_billboard_all_weeks_with_genre_lyrics$combination == df_all_new_data_billboard_seen$combination[i] ]
+      
+    }
+    
+  
+    ###########################################################
+    ## Adding both seen and unseen data frames back together ##
+    ###########################################################  
+  
+    df_new_with_features <- rbind(df_all_new_data_billboard_unseen, df_all_new_data_billboard_seen)
     
 
-  
-  ## creating a DF from scraped Data 
-  df_all_new_data_billboard <- data.frame(artists, songs, dates)
-  
-  df_all_new_data_billboard$combination <- paste0(df_all_new_data_billboard$artists,"  ",  df_all_new_data_billboard$songs)   # combination ensures  only unique matches
-  
-  
-  ## retrieving only those songs which are not in the overall DF yet since for those no API querying is required!
-  df_all_new_data_billboard_no_date <- df_all_new_data_billboard[, c("artists", "songs", "combination")] # dates column would prevent a match!
-  
-  # only keeping those combinations with no match in already scraped combinations
-  df_all_new_data_billboard_no_date <- df_all_new_data_billboard_no_date[!df_all_new_data_billboard_no_date$combination %in% (df_all_billboard_all_weeks_with_genre_lyrics$combination) ,]
-  
-  ## getting the respective genres ## 
-  df_all_new_data_billboard_no_date$genre <- "a"
-  
-  for (i in 1:nrow(df_all_new_data_billboard_no_date)) {
+    #########################################
+    ## Adding to large DF and to unique DF ##
+    #########################################
     
-  df_all_new_data_billboard_no_date$genre[i] <- get_genre_from_combination(df_all_new_data_billboard_no_date$combination[i][[1]][1])
-  }
 
+    df_all_billboard_all_weeks_with_genre_lyrics <- dplyr::bind_rows(df_all_billboard_all_weeks_with_genre_lyrics, df_new_with_features)
+    
 
-
-  
-  
-  
-  
-  ## getting the respective lyrics ## 
-  
-  
-  
-  
-  ## getting the 
-
-  }   # end of large loop! 
-
-
-df_all_billboard_all_weeks_with_genre_lyrics$combination[df_all_billboard_all_weeks_with_genre_lyrics$combination == "Adele  Easy On Me"]
-
-"Adele  Easy On Me"
-
-today_date - final_date_df
+    ## saving results ##
+    
+    write.csv(df_all_billboard_all_weeks_with_genre_lyrics,"df_all_billboard_all_weeks_with_genre_lyrics.csv")
+    
+    
+  }   # end of if-statement! 
 
 
 

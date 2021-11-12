@@ -32,6 +32,6 @@
 
 ### Other
 
-- Automatisierte Aktualisierung der Charts jede Woche (Stichpunkt Sys.sleep(7x24) -> neues Scraping)
-- Nochmal einlesen Shiny-App auf Uni-Server hosten
+- Automatisierte Aktualisierung der Charts jede Woche (Stichpunkt Sys.sleep(7x24) -> neues Scraping) x
+- Nochmal einlesen Shiny-App auf Uni-Server hosten x
 

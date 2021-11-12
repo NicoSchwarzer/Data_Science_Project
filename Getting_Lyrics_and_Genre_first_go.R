@@ -179,6 +179,36 @@ get_genre__from_combination <- function(keyword) {
   
 }
 
+## function to map the many genres to overarching genres
+
+matching_genres <- function(df) {
+  
+  # function needs a df with column "genre" as input. 
+  # Also the matching excel file must be read in 
+  
+  genres_mapping <- readxl::read_excel("unique_genres.xlsx")
+  genres_mapping <- genres_mapping[,c("original_genre", "new_genre")]
+  
+  for (i in 1:nrow(df)) {
+    
+    genre_here <- df$genre[i]
+    
+    # in case the genre is unknown
+    if ( length(genre_here) == 0 ) {
+      df$genre[i] <- "unknown genre"
+      
+      # in all other cases:     
+    } else {
+      matched_genre <- genres_mapping$new_genre[i]
+      df$genre[i] <- matched_genre
+      
+    }
+  }
+  
+  return(df)
+}
+
+
 
 
 ############################################################################
@@ -367,9 +397,14 @@ write.csv(df_all_billboard_weeks_unique_with_genre_lyrics_no_na,"df_all_billboar
 
 write.csv(df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED,"df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED.csv")
 
-nrow(df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED)
 
-xx1 <- nrow(na.omit(df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED))
+## applying the genre mapping and saving 
+
+df_all_billboard_all_weeks_with_reduced_genre_lyrics_NOT_CLEANED <- matching_genres(df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED)
+
+write.csv(df_all_billboard_all_weeks_with_reduced_genre_lyrics_NOT_CLEANED,"df_all_billboard_all_weeks_with_reduced_genre_lyrics_NOT_CLEANED.csv")
+
+
 
 
 

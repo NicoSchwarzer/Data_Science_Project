@@ -200,10 +200,8 @@ get_lyrics_from_combination_safely <- function(keyword) {
 get_acoustic_features <- function(keyword) {
   # keyword has to be string
   
-  
   result_general <- spotifyr::search_spotify(keyword)
   track_id <- result_general$tracks$items$id[1][1]
-  
   
   if (is.null(track_id) == TRUE) { # ensuring consistent data format
     danceability <- NaN
@@ -213,7 +211,6 @@ get_acoustic_features <- function(keyword) {
     duration <- NaN
     
   } else {
-    
     
     # getting further audio features
     audio_feautres <- spotifyr::get_track_audio_features(track_id)
@@ -266,21 +263,56 @@ get_genre__from_combination <- function(keyword) {
   
 }
 
+## function to map the many genres to overarching genres
+
+matching_genres <- function(df) {
+  
+  # function needs a df with column "genre" as input. 
+  # Also the matching excel file must be read in 
+  
+  genres_mapping <- readxl::read_excel("unique_genres.xlsx")
+  genres_mapping <- genres_mapping[,c("original_genre", "new_genre")]
+  
+  for (i in 1:nrow(df)) {
+    
+    genre_here <- df$genre[i]
+    
+    # in case the genre is unknown
+    if ( length(genre_here) == 0 ) {
+      df$genre[i] <- "unknown genre"
+      
+      # in all other cases:     
+    } else {
+      matched_genre <- genres_mapping$new_genre[i]
+      df$genre[i] <- matched_genre
+      
+    }
+  }
+  
+  return(df)
+}
 
 
 ###########################
 ## Reading in overall DF ## 
 ###########################
 
-df_all_billboard_all_weeks_with_genre_lyrics <- read.csv("df_all_billboard_all_weeks_with_genre_lyrics.csv")
-df_all_billboard_all_weeks_with_genre_lyrics <- df_all_billboard_all_weeks_with_genre_lyrics[, c("artists", "songs", "dates", "combination", "genre", "lyrics", "danceability", "energy", "loadness", "tempo", "duration")]
+# with original genres
+df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED <- read.csv("df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED.csv")
+df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED <- df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED[, c("artists", "songs", "dates", "combination", "genre", "lyrics", "danceability", "energy", "loadness", "tempo", "duration")]
+
+# with reduced genres
+df_all_billboard_all_weeks_with_reduced_genre_lyrics_NOT_CLEANED <- read.csv("df_all_billboard_all_weeks_with_reduced_genre_lyrics_NOT_CLEANED.csv")
+df_all_billboard_all_weeks_with_reduced_genre_lyrics_NOT_CLEANED <- df_all_billboard_all_weeks_with_reduced_genre_lyrics_NOT_CLEANED[, c("artists", "songs", "dates", "combination", "genre", "lyrics", "danceability", "energy", "loadness", "tempo", "duration")]
+
 
 # making sure right datetime format is set 
-df_all_billboard_all_weeks_with_genre_lyrics$dates <- as.Date(df_all_billboard_all_weeks_with_genre_lyrics$dates)
+df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED$dates <- as.Date(df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED$dates)
+df_all_billboard_all_weeks_with_reduced_genre_lyrics_NOT_CLEANED$dates <- as.Date(df_all_billboard_all_weeks_with_reduced_genre_lyrics_NOT_CLEANED$dates)
 
 
-# most recent date from overall DF
-last_date_all_df <- df_all_billboard_all_weeks_with_genre_lyrics$dates[nrow(df_all_billboard_all_weeks_with_genre_lyrics)]
+# most recent date from overall DF - here only the DF of the original genre is needed 
+last_date_all_df <- df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED$dates[nrow(df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED)]
 
 
 
@@ -368,10 +400,10 @@ if (num_weeks_missed != 0)  {
     ########################################################################
     
     # combinations with A match in already scraped combinations
-    df_all_new_data_billboard_seen <- df_all_new_data_billboard[df_all_new_data_billboard$combination %in% (df_all_billboard_all_weeks_with_genre_lyrics$combination) ,]
+    df_all_new_data_billboard_seen <- df_all_new_data_billboard[df_all_new_data_billboard$combination %in% (df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED$combination) ,]
     
     # combinations with NO match in already scraped combinations
-    df_all_new_data_billboard_unseen <- df_all_new_data_billboard[!df_all_new_data_billboard$combination %in% (df_all_billboard_all_weeks_with_genre_lyrics$combination) ,]
+    df_all_new_data_billboard_unseen <- df_all_new_data_billboard[!df_all_new_data_billboard$combination %in% (df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED$combination) ,]
 
 
     ##################################
@@ -445,18 +477,18 @@ if (num_weeks_missed != 0)  {
     for (i in 1:max_iter) {
       
       # genre
-      df_all_new_data_billboard_seen$genre[i] <- df_all_billboard_all_weeks_with_genre_lyrics$genre[df_all_billboard_all_weeks_with_genre_lyrics$combination == df_all_new_data_billboard_seen$combination[i] ]
+      df_all_new_data_billboard_seen$genre[i] <- df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED$genre[df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED$combination == df_all_new_data_billboard_seen$combination[i] ]
       
       # acoustic features 
-      df_all_new_data_billboard_seen$danceability[i] <- df_all_billboard_all_weeks_with_genre_lyrics$danceability[df_all_billboard_all_weeks_with_genre_lyrics$combination == df_all_new_data_billboard_seen$combination[i] ]
-      df_all_new_data_billboard_seen$energy[i] <- df_all_billboard_all_weeks_with_genre_lyrics$energy[df_all_billboard_all_weeks_with_genre_lyrics$combination == df_all_new_data_billboard_seen$combination[i] ]
-      df_all_new_data_billboard_seen$loadness[i] <- df_all_billboard_all_weeks_with_genre_lyrics$loadness[df_all_billboard_all_weeks_with_genre_lyrics$combination == df_all_new_data_billboard_seen$combination[i] ]
-      df_all_new_data_billboard_seen$tempo[i] <- df_all_billboard_all_weeks_with_genre_lyrics$tempo[df_all_billboard_all_weeks_with_genre_lyrics$combination == df_all_new_data_billboard_seen$combination[i] ]
-      df_all_new_data_billboard_seen$duration[i] <- df_all_billboard_all_weeks_with_genre_lyrics$duration[df_all_billboard_all_weeks_with_genre_lyrics$combination == df_all_new_data_billboard_seen$combination[i] ]
+      df_all_new_data_billboard_seen$danceability[i] <- df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED$danceability[df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED$combination == df_all_new_data_billboard_seen$combination[i] ]
+      df_all_new_data_billboard_seen$energy[i] <- df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED$energy[df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED$combination == df_all_new_data_billboard_seen$combination[i] ]
+      df_all_new_data_billboard_seen$loadness[i] <- df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED$loadness[df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED$combination == df_all_new_data_billboard_seen$combination[i] ]
+      df_all_new_data_billboard_seen$tempo[i] <- df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED$tempo[df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED$combination == df_all_new_data_billboard_seen$combination[i] ]
+      df_all_new_data_billboard_seen$duration[i] <- df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED$duration[df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED$combination == df_all_new_data_billboard_seen$combination[i] ]
       
       
       # lyrics 
-      df_all_new_data_billboard_seen$lyrics[i] <- df_all_billboard_all_weeks_with_genre_lyrics$lyrics[df_all_billboard_all_weeks_with_genre_lyrics$combination == df_all_new_data_billboard_seen$combination[i] ]
+      df_all_new_data_billboard_seen$lyrics[i] <- df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED$lyrics[df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED$combination == df_all_new_data_billboard_seen$combination[i] ]
       
     }
     
@@ -467,21 +499,57 @@ if (num_weeks_missed != 0)  {
   
     df_new_with_features <- rbind(df_all_new_data_billboard_unseen, df_all_new_data_billboard_seen)
     
-
-    #########################################
-    ## Adding to large DF and to unique DF ##
-    #########################################
+    ## Re-mapping the genres for the new DF
+    df_new_with_features_reduced <- matching_genres(df_new_with_features)
     
+  
+    ##########################################
+    ## Adding to large DF and removing Nans ##
+    ##########################################
+    
+    ### for DF with original genres ###
+    
+    # appending large DF
+    df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED <- dplyr::bind_rows(df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED, df_new_with_features)
+    
+    # getting rid of nans 
+    df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED <- na.omit(    df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED)
+    
+    df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED <- df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED[df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED$genre != "NAN",]
+    df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED <- df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED[df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED$genre != "Nan",]
 
-    df_all_billboard_all_weeks_with_genre_lyrics <- dplyr::bind_rows(df_all_billboard_all_weeks_with_genre_lyrics, df_new_with_features)
+    df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED <- df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED[df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED$lyrics != "NAN",]
+    df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED <- df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED[df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED$lyrics != "Nan",]
+    
+    
+    ### for DF with reduced genres ###
+    
+    # appending large DF
+    df_all_billboard_all_weeks_with_reduced_genre_lyrics_NOT_CLEANED <- dplyr::bind_rows(df_all_billboard_all_weeks_with_reduced_genre_lyrics_NOT_CLEANED, df_new_with_features)
+    
+    # getting rid of nans 
+    df_all_billboard_all_weeks_with_reduced_genre_lyrics_NOT_CLEANED <- na.omit(    df_all_billboard_all_weeks_with_reduced_genre_lyrics_NOT_CLEANED)
+    
+    df_all_billboard_all_weeks_with_reduced_genre_lyrics_NOT_CLEANED <- df_all_billboard_all_weeks_with_reduced_genre_lyrics_NOT_CLEANED[df_all_billboard_all_weeks_with_reduced_genre_lyrics_NOT_CLEANED$genre != "NAN",]
+    df_all_billboard_all_weeks_with_reduced_genre_lyrics_NOT_CLEANED <- df_all_billboard_all_weeks_with_reduced_genre_lyrics_NOT_CLEANED[df_all_billboard_all_weeks_with_reduced_genre_lyrics_NOT_CLEANED$genre != "Nan",]
+    
+    df_all_billboard_all_weeks_with_reduced_genre_lyrics_NOT_CLEANED <- df_all_billboard_all_weeks_with_reduced_genre_lyrics_NOT_CLEANED[df_all_billboard_all_weeks_with_reduced_genre_lyrics_NOT_CLEANED$lyrics != "NAN",]
+    df_all_billboard_all_weeks_with_reduced_genre_lyrics_NOT_CLEANED <- df_all_billboard_all_weeks_with_reduced_genre_lyrics_NOT_CLEANED[df_all_billboard_all_weeks_with_reduced_genre_lyrics_NOT_CLEANED$lyrics != "Nan",]
     
 
     ## saving results ##
+
+    # with original genres    
+    write.csv(df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED,"df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED.csv")
+
+    # with re-mapped genres    
+    write.csv(df_all_billboard_all_weeks_with_redcued_genre_lyrics_NOT_CLEANED,"df_all_billboard_all_weeks_with_reduced_genre_lyrics_NOT_CLEANED.csv")
     
-    write.csv(df_all_billboard_all_weeks_with_genre_lyrics,"df_all_billboard_all_weeks_with_genre_lyrics.csv")
     
-    
-  }   # end of if-statement! 
+  }   # end of large if-statement! 
+
+
+
 
 
 

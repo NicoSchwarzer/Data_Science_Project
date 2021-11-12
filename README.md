@@ -37,11 +37,16 @@
 
 
 
-## (Possible) Genre Mapping:
+### (Possible) Genre Mapping (to be found and possibly modified in unique_genres.xlsx):
+
 -	Funk, boogie, edm, elekto etc. are classified as „dance“
 -	Chanson, ESC and soul and adult standards are classified as „pop“
 -	Any version of harder rock (punk, grunge etc.) is classified as „rock“
 -	Classical music, instumental soundtracks are classified as  „instrumental“
 -	Any version of Rap and house is classified as „rnb“
 -	Folk music from around the world and children’s music is classified as „folk“
+
+--> now, always 2 DFs are saved (and appended weekly)
+1) df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED.csv (with original genres)
+2) df_all_billboard_all_weeks_with_reduced_genre_lyrics_NOT_CLEANED.csv (with re-mapped genres)
 

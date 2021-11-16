@@ -15,16 +15,19 @@
 #### Reiter
 > Sentiment Analysis, Happy/Sad-Score over time and Genre (Saisonalitäten erkennbar? Große Gesellschaftliche Ereignisse erkennbar?)
 
-#### Reiter 
+#### Reiter   -> Leo
+> 3rd Pronouns analysis
+
+#### Reiter   -> Leo 
 > Topic Analysis, um welche Themen ging es wann? (siehe To Do Stichpunkt 1)
 
-#### Reiter 
+#### Reiter   -> Nico
 > Lieder mit ähnlichen Lyrics/Topics (Stichword Unsupervised Classification)
 
 #### Reiter 
 > Länge/Komplexität over time and Genre
 
-#### Reiter (under Discussion)
+#### Reiter (under Discussion)    -> Leo
 > Quiz auf Word Cloud Basis, gegeben die Wordcloud eines zufälligen Liedes und vier Antwortmöglichkeiten, welches Lied wird dargestellt?)
 
 

@@ -70,7 +70,13 @@ shinyUI(navbarPage(
            )),  ## Parentheses to close second page
   
   ### Third Page ###
-  tabPanel("3rd Page"),
+  tabPanel("3rd Page",
+           ### Style for third page: Just put everything there
+           verticalLayout(
+             plotOutput("test_plot"),
+             
+             actionButton("refresh_data", "Refresh Data!")
+           )),
   
   
   ### Fourth Page ###

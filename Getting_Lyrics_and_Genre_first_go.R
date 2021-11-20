@@ -2,8 +2,6 @@
 ## Getting Lyrics and Genre  first go  ##
 #########################################
 
-## Setting WD 
-setwd("C:\\Users\\Nico\\Documents\\Uni\\3. Sem\\DS Projekt\\Code_and_Data")
 
 ## please make sure that the file all_data_billboard_weeks.csv resides here!
 
@@ -67,6 +65,37 @@ genius_token()
 ########################
 
 
+getting_new_artists <- function(df) {
+  
+  ## This function splits the artist column by commonly used stopwrods for artists and yields two new columns for the artists,  which are added to the DF ##
+  ## The DF must contain a artists - column
+  
+  df$artists_1 <- df$artists
+  df$artists_2 <- df$artists
+  
+  stopwords <- c("and", "And",  "AND", "With", "with", "WITH", "feat", "feat.", "featuring", "Featuring", "&")
+  
+  for (i in 1:nrow(df)) {
+    
+    #  i <- 46
+    splitted_artist <- str_split(df$artists[i], " ")[[1]]
+    
+    
+    if (sum(stopwords %in% splitted_artist) > 0) {
+      
+      word_here <- which(stopwords %in% splitted_artist)
+      #new artist 
+      df$artists_1[i] <- str_split(df$artists[i],  stopwords[word_here] )[[1]][1]
+      df$artists_2[i] <- str_split(df$artists[i],  stopwords[word_here] )[[1]][2]
+    }
+  }
+  
+  return(df)
+}
+
+
+
+
 ## function to  get song lyrics from artist song title combination
 
 get_lyrics_from_combination <- function(keyword) {
@@ -76,20 +105,20 @@ get_lyrics_from_combination <- function(keyword) {
   song_info <- geniusr::search_genius(search_term = keyword)
   
   if (length(song_info$content) == 0) {
-      lyrics <- "NaN"
+    lyrics <- "NaN"
   } else {
-      songId <- song_info$content[[1]]$id
-      
-      # lyrics from song id 
-      lyrics_a <- geniusr::get_lyrics_id(song_id = songId)
-      
-      if ( nrow(lyrics_a) == 0) { # assing possible cause of error
-        lyrics <- "Nan"
-      } else {
+    songId <- song_info$content[[1]]$id
+    
+    # lyrics from song id 
+    lyrics_a <- geniusr::get_lyrics_id(song_id = songId)
+    
+    if ( nrow(lyrics_a) == 0) { # assing possible cause of error
+      lyrics <- "Nan"
+    } else {
       # post-processing
       lyrics_b <- lyrics_a$line
       lyrics <- paste(unlist(t(lyrics_b)), collapse = " ")
-      }
+    }
   }
   return(lyrics)
 }
@@ -158,25 +187,59 @@ get_acoustic_features <- function(keyword) {
 ## function to get genre by keyword, i.e. artist song combination as a string
 
 
-get_genre__from_combination <- function(keyword) {
-  # keyword has to be string
+get_genre_from_combination <- function(c1, c2, c3, a1, a2, a3) {
   
-  result_general <- spotifyr::search_spotify(keyword)
-  track_id <- result_general$tracks$items$id[1][1]
+  # c1-c3 have to be string - and are supposed to be the three combination variables 
+  # a1-a3 have to be string - and are supposed to be the three artists variables 
   
-  if (is.null(track_id) == TRUE) { # ensuring consistent data format
-    genre <- "NAN"
-  } else {
-    artist_id <- spotifyr::get_track(track_id)$artists$id[1][[1]]
-    a <- spotifyr::get_artist(artist_id)$genres[1]
+  
+  ## checking if the artist variable had been split ## 
+  
+  if (c1 == c2) { # case that artist has not been split 
+    
+    result_general <- spotifyr::search_spotify(c1)
+    track_id <- result_general$tracks$items$id[1][1]
+    
+    if (is.null(track_id) == TRUE) { # now by artist
+      artist <- spotifyr::search_spotify(c1)
+      a <- artist$artists$items$genres[[1]][1]
+    } else {
+      artist <- spotifyr::get_track(track_id)$artists$id[1][[1]]
+      a <- spotifyr::get_artist(artist)$genres[1]
+    }
+  } else {  # case that artist has been split 
+    
+    result_general <- spotifyr::search_spotify(c2)
+    track_id <- result_general$tracks$items$id[1][1]
+    
+    if (is.null(track_id) == TRUE) { # now by artist
+      artist <- spotifyr::search_spotify(c2)
+      a <- artist$artists$items$genres[[1]][1]
+    } else {
+      artist <- spotifyr::get_track(track_id)$artists$id[1][[1]]
+      a <- spotifyr::get_artist(artist)$genres[1]
+    }
+    
+    # checking if first alternative worked 
+    if (is.null(a[[1]]) == TRUE) {
+      artist <- spotifyr::search_spotify(c2)
+      a <- artist$artists$items$genres[[1]][1]
+    } else {
+      artist <- spotifyr::get_track(track_id)$artists$id[1][[1]]
+      a <- spotifyr::get_artist(artist)$genres[1]
+    }
+    
   }
-  if (is.null(a[[1]]) == TRUE) {  # ensuring consistent data format
-    genre <- "Nan"
+  # final check 
+  if (is.null(a[[1]]) == TRUE & is.null(artist) == TRUE  ) {
+    genre <- "to be classified"
+  } else if (is.null(a[[1]]) == TRUE & is.null(artist) == FALSE  ) {
+    genre <- "not known"
   } else {
-    genre <- a    
+    genre <- a
   }
+  
   return(genre)
-  
 }
 
 ## function to map the many genres to overarching genres
@@ -199,6 +262,7 @@ matching_genres <- function(df) {
       
       # in all other cases:     
     } else {
+      
       matched_genre <- genres_mapping$new_genre[i]
       df$genre[i] <- matched_genre
       
@@ -217,16 +281,16 @@ matching_genres <- function(df) {
 
 
 # reading in data  
-df_all_billboard_weeks = read.csv("all_data_billboard_weeks.csv")
+df_all_billboard_weeks = read.csv("all_data_billboard_weeks.csv", stringsAsFactors = F)
+
 df_all_billboard_weeks <- df_all_billboard_weeks[,c("artists","songs","dates")]
 
 # displaying head
-head(df_all_billboard_weeks, 10)
+#head(df_all_billboard_weeks, 10)
 
 
-
-# Coding variable of combination of artist and song title 
-df_all_billboard_weeks$combination <- paste0(df_all_billboard_weeks$artists,"  ", df_all_billboard_weeks$songs)   #maybe needed: as.character(
+# Coding variable of combination of artist and song title - also for the alternative representation of the artists
+df_all_billboard_weeks$combination <- paste0(df_all_billboard_weeks$artists,"  ", df_all_billboard_weeks$songs)   
 
 
 #################################
@@ -244,6 +308,15 @@ df_all_billboard_weeks_unique <- df_all_billboard_weeks_no_date  %>%
 
 #nrow(df_all_billboard_weeks_no_date) # 322800
 #nrow(df_all_billboard_weeks_unique) # 28369 -> less than a 1/10 
+
+
+# Getting alternative representation of the artists 
+df_all_billboard_weeks_unique <- getting_new_artists(df_all_billboard_weeks_unique)
+
+
+# Coding variable of combination of artist and song title - also for the alternative representation of the artists
+df_all_billboard_weeks_unique$combination_1 <- paste0(df_all_billboard_weeks_unique$artists_1,"  ", df_all_billboard_weeks_unique$songs)   
+df_all_billboard_weeks_unique$combination_2 <- paste0(df_all_billboard_weeks_unique$artists_2,"  ", df_all_billboard_weeks_unique$songs)   
 
 
 
@@ -265,16 +338,28 @@ df_all_billboard_weeks_unique_with_genre$genre <- "a"
 
 max_iter <- nrow(df_all_billboard_weeks_unique_with_genre)
 
-for (i in 1:max_iter) {
+
+
+
+for (i in 16455:max_iter) {
   
   # getting correct genre  
-  df_all_billboard_weeks_unique_with_genre$genre[i] <- get_genre_from_combination(df_all_billboard_weeks_unique_with_genre$combination[i][[1]])
+  df_all_billboard_weeks_unique_with_genre$genre[i] <- get_genre_from_combination(df_all_billboard_weeks_unique_with_genre$combination[i], df_all_billboard_weeks_unique_with_genre$combination_1[i], df_all_billboard_weeks_unique_with_genre$combination_2[i], df_all_billboard_weeks_unique_with_genre$artists[i], df_all_billboard_weeks_unique_with_genre$artists_1[i], df_all_billboard_weeks_unique_with_genre$artists_2[i])
   
   # overview for error control
   print(i)
   print(df_all_billboard_weeks_unique_with_genre$genre[i])
   
+  if (( i %% 100) == 0) {
+    Sys.sleep(30)
+  }  
+  
 }
+
+
+
+# saving intermediate result 
+write.csv(df_all_billboard_weeks_unique_with_genre,"df_all_billboard_weeks_unique_with_genre_no_lyrics.csv")
 
 
 ## getting acoustic features for unique DF
@@ -308,7 +393,7 @@ for (i in 1:max_iter) {
 
 
 # saving intermediate result 
-write.csv(df_all_billboard_weeks_unique_with_genre,"df_all_billboard_weeks_unique_with_genre.csv")
+write.csv(df_all_billboard_weeks_unique_with_genre_no_lyrics,"df_all_billboard_weeks_unique_with_genre_no_lyrics.csv")
 
 
 
@@ -317,9 +402,10 @@ write.csv(df_all_billboard_weeks_unique_with_genre,"df_all_billboard_weeks_uniqu
 #############################################
 
 
+
 # perhaps reloading the dataframe containing the genres 
-#df_all_billboard_weeks_unique_with_genre <- read.csv("df_all_billboard_weeks_unique_with_genre.csv")
-#df_all_billboard_weeks_unique_with_genre <- df_all_billboard_weeks_unique_with_genre[,c("artists","songs","combination", "genre")]
+#df_all_billboard_weeks_unique_with_genre_no_lyrics <- read.csv("df_all_billboard_weeks_unique_with_genre_no_lyrics.csv",  stringsAsFactors = FALSE)
+#df_all_billboard_weeks_unique_with_genre_no_lyrics <- df_all_billboard_weeks_unique_with_genre_no_lyrics[,c("artists","songs","combination", "genre")]
 
 
 # renaming data frame
@@ -362,7 +448,7 @@ write.csv(df_all_billboard_weeks_unique_with_genre_lyrics,"df_all_billboard_week
 
 ### re-merging to the DF containing all charts (not just unique ones) ### 
 
-df_all_billboard_weeks_unique_with_genre_lyrics_no_na <- na.omit(df_all_billboard_weeks_unique_with_genre_lyrics)
+#df_all_billboard_weeks_unique_with_genre_lyrics_no_na <- na.omit(df_all_billboard_weeks_unique_with_genre_lyrics)
 ##
 
 df_all_billboard_weeks_unique_with_genre_lyrics_no_na <- df_all_billboard_weeks_unique_with_genre_lyrics_no_na[df_all_billboard_weeks_unique_with_genre_lyrics_no_na$genre != "NAN",]

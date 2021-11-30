@@ -79,8 +79,31 @@ shinyUI(navbarPage(
            )),
   
   
-  ### Fourth Page ###
-  tabPanel("4th Page")
+## complexity panel ## 
+tabPanel("Length and complexity of lyrics",
+         
+         fluidPage(
+           
+           tags$h1("Length of Lyrics"),
+           
+           tags$h3("Development of Song Lyrics Length across Time"),
+           tags$h4("When analyzing the length of songs lyrics across time, it becomes very much apparent that across genres the avergae number of words almost doubled from 1960 until today. This is quite striking! Once can select genres to see the development of lyrics belonging to that genre."),
+           
+           
+           fluidRow(width=12,
+                    column(width=12,
+                           selectInput("Genre", "Select genres:", choices = df_lengths_genres_dates$genre, multiple = T, selected = c("pop", "rock", "dance"), selectize = TRUE, width = NULL, size = NULL),
+                    )),
+           plotlyOutput("plot_complexity_1") ,
+           
+           tags$h3("Just more 'oh-s' and 'ah-s' in today's songs ?"),
+           tags$h4("Going further, one might analyze if the increase in lyrics length is powered by a more freuqnet use of onomatopoeic words ('Uh', 'Ah', 'La-La'). These have been handpicked and dropped from the lyrics. Also, as is common in NLP tasks, common stopwords of the english language have been removed as well. The english stopwords provided in BaseR were utilized for this.
+                   While the overall number of words drops (as expected), the rising trend is still present "),
+           
+           plotlyOutput("plot_complexity_2") ,
+           
+         )
+)
   
   
   

@@ -58,6 +58,52 @@ shinyServer(function(input, output) {
   })
   
   
+  ## for complexity / length plots ##
+  
+  
+  
+  output$plot_complexity_1 <- renderPlotly({
+    
+    plotData <- data.frame(df_lengths_genres_dates[df_lengths_genres_dates$genre %in% input$Genre, ])
+    ggplotly(
+      ggplot(data= plotData , aes(x=dates,  y= Mean_Song_Length) ) +
+        geom_line( aes(colour = genre)) + 
+        xlab("Time") + 
+        ylab("Words per song") + 
+        ggtitle("Number of words per song - over time")+
+        stat_smooth(method=lm, colour = "black") + 
+        labs(  subtitle="Overall trend in black") + 
+        scale_color_brewer(palette = "Blues") + 
+        theme(plot.title = element_text(size = 18, face = "bold", hjust = 0.5),
+              axis.title=element_text(size=16,face="bold")  ,
+              axis.text=element_text(size= 15, face="bold"),
+              plot.subtitle = element_text(size = 15, hjust = 0.5),
+              legend.text = element_text(size=14), 
+              legend.title = element_text(size=15 , face="bold",  hjust = 0.5))
+    )
+  })
+  output$plot_complexity_2 <- renderPlotly({
+    
+    plotData <- data.frame(df_lengths_genres_dates_2[df_lengths_genres_dates$genre %in% input$Genre, ])
+    ggplotly(
+      ggplot(data= plotData , aes(x=dates,  y= Mean_Song_Length) ) +
+        geom_line( aes(colour = genre)) + 
+        xlab("Time") + 
+        ylab("Words per song") + 
+        ggtitle("Mean Number of words  - without stopwords or onomatopoetics")+
+        stat_smooth(method=lm, colour = "black") + 
+        labs(  subtitle="Overall trend in black") + 
+        scale_color_brewer(palette = "Blues") + 
+        theme(plot.title = element_text(size = 18, face = "bold", hjust = 0.5),
+              axis.title=element_text(size=16,face="bold")  ,
+              axis.text=element_text(size= 15, face="bold"),
+              plot.subtitle = element_text(size = 15, hjust = 0.5),
+              legend.text = element_text(size=14), 
+              legend.title = element_text(size=15 , face="bold",  hjust = 0.5))
+    )
+  })
+  
+  
 })
 
 

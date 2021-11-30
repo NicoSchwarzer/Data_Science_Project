@@ -84,7 +84,7 @@ shinyServer(function(input, output) {
   })
   output$plot_complexity_2 <- renderPlotly({
     
-    plotData <- data.frame(df_lengths_genres_dates_2[df_lengths_genres_dates$genre %in% input$Genre, ])
+    plotData <- data.frame(df_lengths_genres_dates_2[df_lengths_genres_dates$genre %in% input$Genre_2, ])
     ggplotly(
       ggplot(data= plotData , aes(x=dates,  y= Mean_Song_Length) ) +
         geom_line( aes(colour = genre)) + 
@@ -102,6 +102,8 @@ shinyServer(function(input, output) {
               legend.title = element_text(size=15 , face="bold",  hjust = 0.5))
     )
   })
+  
+
   
   
 })

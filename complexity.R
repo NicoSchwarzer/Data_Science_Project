@@ -83,7 +83,7 @@ df_lengths_genres_dates_1 <- df_lyrics %>%
   filter(len <= 1000) %>%
   filter(len > 20) %>%
   filter(validUTF8(lyrics) == T) %>%
-  select("dates", "genre", "len", "tempo", "duration", "combination", "lyrics")
+  select("dates", "genre", "len", "tempo", "duration", "combination", "lyrics", "danceability")
 
 
 
@@ -106,15 +106,11 @@ adverbs <- tidytext::nma_words$word[tidytext::nma_words$modifier == "adverb"]
 ## sentiment indices 
 sentiments_afinn <- get_sentiments("afinn")
 
-
-
 sentiments_afinn_negative <- sentiments_afinn[sentiments_afinn$value <0, ]
 sentiments_afinn_positive <- sentiments_afinn[sentiments_afinn$value > 0, ]
 
-
-
 ## important now - > len refers to overall lyrics length while len1 refers to to reduced length!
-xx <- df_lengths_genres_dates_1[, c("lyrics", "combination", "tempo", "duration", "genre", "len")]
+xx <- df_lengths_genres_dates_1[, c("lyrics", "combination", "tempo", "duration", "genre", "len", "danceability")]
 df_uniques <- distinct(xx)
 rm(xx)
 
@@ -165,8 +161,8 @@ rm(pos_list)
 rm(neg_list)
 
 
-df_uniques <- df_uniques[, c("combination", "len", "len1", "duration", "tempo", "genre", "compl", "compl_stem", "adverbs", "sent_score", "pos_1", "pos_2", "pos_3", "pos_len", "neg_1", "neg_2", "neg_3", "neg_len", "pos_neg_ratio")]
-df_lengths_genres_dates_2_1 <- left_join(df_lengths_genres_dates_1[,  c("combination", "dates", "genre")], df_uniques[, c("combination", "len", "len1", "compl", "compl_stem", "duration", "tempo", "adverbs", "sent_score", "pos_1", "pos_2", "pos_3", "pos_len", "neg_1", "neg_2", "neg_3", "neg_len", "pos_neg_ratio")], by = "combination")
+df_uniques <- df_uniques[, c("combination", "len", "len1", "duration", "tempo", "danceability", "genre", "compl", "compl_stem", "adverbs", "sent_score", "pos_1", "pos_2", "pos_3", "pos_len", "neg_1", "neg_2", "neg_3", "neg_len", "pos_neg_ratio")]
+df_lengths_genres_dates_2_1 <- left_join(df_lengths_genres_dates_1[,  c("combination", "dates", "genre")], df_uniques[, c("combination", "len", "len1", "compl", "compl_stem", "duration", "tempo", "danceability", "adverbs", "sent_score", "pos_1", "pos_2", "pos_3", "pos_len", "neg_1", "neg_2", "neg_3", "neg_len", "pos_neg_ratio")], by = "combination")
 
 
 df_lengths_genres_dates  <- df_lengths_genres_dates_2_1 %>%
@@ -198,13 +194,14 @@ length_duration <-   df_lengths_genres_dates_2_1 %>%
 
 ## correlations ## 
 
+
 corr_table1 <- df_uniques %>%
   filter(genre!= "unknown genre") %>%
   mutate(Rel_Adverbs = (adverbs / len)*100) %>%
   group_by(genre) %>%
-  summarise(Corr1 = cor(tempo, len, use = "complete.obs"),  Corr2 = cor(duration, len, use = "complete.obs"), Rel_Adverbs = mean(Rel_Adverbs, na.rm = T), Mean_Pos_Neg = mean(pos_neg_ratio, na.rm = T) )
+  summarise(Corr1 = cor(tempo, len, use = "complete.obs"),  Corr2 = cor(duration, len, use = "complete.obs"), Rel_Adverbs = mean(Rel_Adverbs, na.rm = T), Mean_Pos_Neg = mean(pos_neg_ratio, na.rm = T), Corr_Sent_Tempo = cor(sent_score, tempo, use = "complete.obs"), Corr_Sent_Dance = cor(sent_score, danceability, use = "complete.obs") )
 
-names(corr_table1) <- c("Genre", "Correlation Lyrics Length with BPM", "Correlation Lyrics Length with Duration", "Percentage of adverbs", "Ratio of positive to negative words")
+names(corr_table1) <- c("Genre", "Correlation Lyrics Length & BPM", "Correlation Lyrics Length & Duration", "Percentage of adverbs", "Ratio of positive to negative words", "Correlation Sentiment & BPM", "Correlation Sentiment & Danceability")
 
 
 
@@ -231,8 +228,7 @@ rm(df_lengths_genres_dates_2_1)
 #length_duration
 #df_uniques
 #df_pos_words
-
-
+# corr_table1
 
 
 
@@ -272,7 +268,7 @@ tabPanel("Introductory Page",
              tags$h4("This R-Shiny Web-Application displays the result of a University Project of the M.Sc. Program Data Science in Business and Economics and Tübingen University. It bundles all relevant steps of a Data Science Project - the last of which is an interactive display of the results residing here."),
                 ),
              fluidRow(
-               tags$h4("The goal of the Project is to gather insights as to how  Song Lyrics have evolved over time using NLP tools. To this aim, we have scraped all hot 100 Billboard charts from 1960 until today and used the Genuis API to retrieve the lyrics. Also, we have gathered genre information as well as information on each song's acoustic features through the Spotify API. Going further, we have trained and implemented a binary classifier to detect of the songs lyrics are in english and made use of the DeepL API if need be for translation."),
+               tags$h4("The goal of the Project is to gather insights as to how  Song Lyrics have evolved over time using NLP tools. To this aim, we have scraped all hot 100 Billboard charts from 1960 until today and used the Genuis API to retrieve the lyrics. Also, we have gathered genre information with use of the Spotify API and assigned each genre to overarching genres by hand. The Spotify API was also used to obtain information on on each song's acoustic features. The latter include Tempo (BPM), Duration (in seconds), Energy (perceptual measure of a song's liveliness) and Danceability (Suitability for dancing based on rythmic features).  Going further, we have trained and implemented a binary classifier to detect of the songs lyrics are in english and made use of the DeepL API if need be for translation."),
                  ),
            fluidRow(
              tags$h4("Obviously, each week, a new hot 100 Chart List is released. To cope with this, we have also implemented a mechanism that performs all above mentioned steps once a week and appends our overall database. As a next step, the lyrics are cleaned and and manipulated for the further analytics tasks. As we gather more lytics each week, all post-processign steps are also re-run on a weekly basis."),
@@ -281,7 +277,6 @@ tabPanel("Introductory Page",
              tags$h3("Overview of available data")),
            fluidRow(
              tags$h4("Here, relevant parameters descriving the scope of the available lyrics data are summarized.")),
-
 
            fluidRow( column(12, align="center",  tableOutput("overview_table") ) ), 
 
@@ -379,7 +374,6 @@ tabPanel("Length and Complexity of Lyrics",
 ),
 
 
-tabPanel("Topic Modelling"),
 
 tabPanel("Sentiment Analysis",
 
@@ -438,7 +432,31 @@ tabPanel("Sentiment Analysis",
                           plotOutput("plot_pos_words")),
                    column(width = 6,
                           plotOutput("plot_neg_words")) ),
-         ) ) ,
+          
+          
+          fluidRow(
+            tags$h3("Relationship of sentiment with acoustic features")
+          ),
+          fluidRow(
+            tags$h4("One might expect that the faster a song is or the more suitable it is for dancing, the better the sentiment ought to be. Take a look at the plots below displaying the correlation of the mean sentiment score and both the tempo and the danceability. No evidence of any correlation of the songs' sentiment scores and their respective Beats per Minute can be determined. Concerning the relationship of the sentiment and the Danceability, a slight negative correlation can be observed - which holds across almost all genres and is especially solid for the genres dance, jazz and rnb.")
+            ),
+          fluidRow(width = 12,
+            column(width = 4,
+                   plotlyOutput("corr_sent_tempo")
+                   ),
+            column(width = 4,
+                   plotlyOutput("corr_sent_dance")
+            ),
+            column(width = 4,
+                  tableOutput("corr_sent_table")
+            ) ),
+
+          
+          
+          
+          ) ) ,
+
+tabPanel("Topic Modelling"),
 tabPanel("Pronoun Analysis"),
 tabPanel("Recommendation")
 
@@ -512,7 +530,7 @@ server <- function(input, output) {
       ggtitle("BPM vs. Lyrics Length")+
       ylim(0, 800) +
       xlim(0, 220) +
-      theme(plot.title = element_text(size = 16, face = "bold", hjust = 0.5),
+      theme(plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
             axis.title=element_text(size=14,face="bold")  ,
             axis.text=element_text(size= 13, face="bold"),
             plot.subtitle = element_text(size = 13, hjust = 0.5),
@@ -532,7 +550,7 @@ server <- function(input, output) {
     ggtitle("Duration vs. Lyrics Length")+
     ylim(0, 800) +
     xlim(0, 600) +
-    theme(plot.title = element_text(size = 16, face = "bold", hjust = 0.5),
+    theme(plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
           axis.title=element_text(size=14,face="bold")  ,
           axis.text=element_text(size= 13, face="bold"),
           plot.subtitle = element_text(size = 13, hjust = 0.5),
@@ -544,7 +562,7 @@ server <- function(input, output) {
   
   
   
-  output$correlations_table_compl1 <- renderTable({corr_table1[,c("Genre", "Correlation Lyrics Length with BPM", "Correlation Lyrics Length with Duration")]})
+  output$correlations_table_compl1 <- renderTable({corr_table1[,c("Genre", "Correlation Lyrics Length & BPM", "Correlation Lyrics Length & Duration")]})
   
   
   output$plot_bpm <- renderPlot({
@@ -590,7 +608,7 @@ server <- function(input, output) {
         stat_smooth(method=lm, colour = "black") + 
       #  labs(  subtitle="Overall trend in black") + 
         scale_color_brewer(palette = "Blues") + 
-        theme(plot.title = element_text(size = 16, face = "bold", hjust = 0.5),
+        theme(plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
               axis.title=element_text(size=14,face="bold")  ,
               axis.text=element_text(size= 13, face="bold"),
               #plot.subtitle = element_text(size = 13, hjust = 0.5),
@@ -610,7 +628,7 @@ server <- function(input, output) {
         stat_smooth(method=lm, colour = "black") + 
        # labs(  subtitle="Overall trend in black") + 
         scale_color_brewer(palette = "Blues") + 
-        theme(plot.title = element_text(size = 16, face = "bold", hjust = 0.5),
+        theme(plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
               axis.title=element_text(size=14,face="bold")  ,
               axis.text=element_text(size= 13, face="bold"),
               #plot.subtitle = element_text(size = 13, hjust = 0.5),
@@ -731,6 +749,45 @@ server <- function(input, output) {
             legend.title = element_text(size=13 , face="bold",  hjust = 0.5)) + 
       coord_flip()
   })
+  
+  output$corr_sent_tempo   <- renderPlotly({
+    ggplotly(
+      ggplot(df_uniques[df_uniques$tempo > 10,], aes(x = tempo, y = sent_score, text = combination)) + 
+        geom_point(color = "steel blue") + 
+        xlab("Beats per Minute") + 
+        ylab("Mean Sentiment Score") + 
+        ggtitle("BPM vs. Sentiment")+
+        theme(plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+              axis.title=element_text(size=14,face="bold")  ,
+              axis.text=element_text(size= 13, face="bold"),
+              plot.subtitle = element_text(size = 13, hjust = 0.5),
+              legend.text = element_text(size=12), 
+              legend.title = element_text(size=13 , face="bold",  hjust = 0.5)),
+      tooltip = "combination"
+    )
+  })
+  
+  output$corr_sent_dance   <- renderPlotly({
+    ggplotly(
+      ggplot(df_uniques, aes(x = danceability, y = sent_score, text = combination)) + 
+        geom_point(color = "steel blue") + 
+        xlab("Danceability") + 
+        ylab("Mean Sentiment Score") + 
+        ggtitle("Danceability vs. Sentiment")+
+        theme(plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+              axis.title=element_text(size=14,face="bold")  ,
+              axis.text=element_text(size= 13, face="bold"),
+              plot.subtitle = element_text(size = 13, hjust = 0.5),
+              legend.text = element_text(size=12), 
+              legend.title = element_text(size=13 , face="bold",  hjust = 0.5)),
+      tooltip = "combination"
+    )
+  })
+  
+  output$corr_sent_table <- renderTable({
+    corr_table1[, c("Genre", "Correlation Sentiment & BPM" , "Correlation Sentiment & Danceability")]
+  })
+  
   
   
     

@@ -5,7 +5,7 @@
 
 ## use in ggplot 
 #scale_color_brewer(palette = "Blues") + 
-#theme(plot.title = element_text(size = 16, face = "bold", hjust = 0.5),
+#theme(plot.title = element_text(size = 16, face = "bold", hjust = 0.5),   # evtl size = 14
 #      axis.title=element_text(size=14,face="bold")  ,
 #      axis.text=element_text(size= 13, face="bold"),
 #      plot.subtitle = element_text(size = 13, hjust = 0.5),
@@ -13,6 +13,8 @@
 #      legend.title = element_text(size=13 , face="bold",  hjust = 0.5))
 #)
 
+
+## wenn nur eine Farbe dann "steel blue"
 
 ## use of following stop words and "Lautmalerien" possible
 #onomopoetics <- c("ah","ooh","shimmy","uh","wah","oop","na","nah","bop","whoa","ya","mm","mmh","mmm","mmmh","o","oh","oo","ole","ola","hip","hipp","yo","jo","ee","eeh","da","dah","da-da","dada","ho","hoh","wo","woo", "uh", "du","da", "duh", "dah", "wow")
@@ -46,6 +48,7 @@ if (!require("tm")) install.packages("tm")
 if (!require("shiny")) install.packages("shiny")
 if (!require("shinythemes")) install.packages("shinythemes")
 if (!require("SnowballC")) install.packages("SnowballC")
+if (!require("textdata")) install.packages("textdata")
 
 
 library(tidyverse)
@@ -57,14 +60,15 @@ library(tm)
 library(shiny)
 library(shinythemes)
 library(SnowballC)
+library(textdata)
 
 
 
 
 ## Einfach nehmnen des neusten "base_data_cleaned"
 
-#df_lyrics <- read_csv("base_data_cleaned.csv")
-df_lyrics <- base_data_cleaned
+df_lyrics <- readr::read_csv("base_data_cleaned.csv")
+# df_lyrics <- base_data_cleaned
 
 
 
@@ -79,14 +83,13 @@ df_lyrics <- base_data_cleaned
 ########################################
 
 
-# mean length per genre and date/year
 df_lengths_genres_dates_1 <- df_lyrics %>%
   filter(is.na(lyrics) == F) %>%
   mutate(len = sapply(strsplit(lyrics, " "), length)) %>%   
   filter(len <= 1000) %>%
   filter(len > 20) %>%
   filter(validUTF8(lyrics) == T) %>%
-  select("dates", "genre", "len", "tempo", "duration", "combination", "lyrics", "danceability")
+  select("dates", "genre", "len", "tempo", "duration", "combination", "lyrics", "danceability", "sent")
 
 
 
@@ -97,7 +100,7 @@ df_lengths_genres_dates_1 <- df_lyrics %>%
 #common_words$word[1:1000]  
 
 
-onomopoetics <- c("ah","ooh","shimmy","uh","wah","oop","na","nah","bop","whoa","ya","mm","mmh","mmm","mmmh","o","oh","oo","ole","ola","hip","hipp","yo","jo","ee","eeh","da","dah","da-da","dada","ho","hoh","wo","woo", "uh", "du","da", "duh", "dah", "wow")
+onomopoetics <- c("ah","ooh","shimmy","uh","wah","oop","na","nah","bop","whoa","ya","mm","mmh","mmm","mmmh","o","oh","oo","ole","ola","hip","hipp","yo","jo","ee","eeh","da","dah","da-da","dada","ho","hoh","wo","woo", "uh", "du","da", "duh", "dah", "wow", "yeah", "la")
 
 ## stopwords from base R
 sw <- stop_words$word
@@ -113,7 +116,7 @@ sentiments_afinn_negative <- sentiments_afinn[sentiments_afinn$value <0, ]
 sentiments_afinn_positive <- sentiments_afinn[sentiments_afinn$value > 0, ]
 
 ## important now - > len refers to overall lyrics length while len1 refers to to reduced length!
-xx <- df_lengths_genres_dates_1[, c("lyrics", "combination", "tempo", "duration", "genre", "len", "danceability")]
+xx <- df_lengths_genres_dates_1[, c("lyrics", "combination", "tempo", "duration", "genre", "len", "danceability", "sent")]
 df_uniques <- distinct(xx)
 rm(xx)
 
@@ -123,33 +126,27 @@ df_uniques <- df_uniques %>%
   mutate(ly =  removeWords(ly2,onomopoetics)) 
 
 
-
 for (i in 1:nrow(df_uniques)) {
   
- a <- strsplit(df_uniques$ly[i], " ")
- b <- a[[1]][a[[1]] %in% sentiments_afinn$word] # for sentiment matching 
- # positive words (length and most common ones)
- pos <- b[b %in% sentiments_afinn_positive$word]
- pos_list <- sort(pos[is.na(pos) == F], decreasing=T)[1:3]
- df_uniques$pos_1[i] <- pos_list[1]
- df_uniques$pos_2[i] <- pos_list[2]
- df_uniques$pos_3[i] <- pos_list[3]
- df_uniques$pos_len[i] <- length(pos)
- # positive words (length and most common ones)
- neg <- b[b %in% sentiments_afinn_negative$word]
- neg_list <- sort(neg[is.na(neg) == F], decreasing=T)[1:3]
- df_uniques$neg_1[i] <- neg_list[1]
- df_uniques$neg_2[i] <- neg_list[2]
- df_uniques$neg_3[i] <- neg_list[3]
- df_uniques$neg_len[i] <- length(neg)
+  a <- strsplit(df_uniques$ly[i], " ")
+  b <- a[[1]][a[[1]] %in% sentiments_afinn$word] # for sentiment matching 
+  # positive words (length and most common ones)
+  pos <- b[b %in% sentiments_afinn_positive$word]
+  pos_list <- sort(pos[is.na(pos) == F], decreasing=T)[1]
+  df_uniques$pos_1[i] <- pos_list[1]
+  df_uniques$pos_len[i] <- length(pos)
+  # positive words (length and most common ones)
+  neg <- b[b %in% sentiments_afinn_negative$word]
+  neg_list <- sort(neg[is.na(neg) == F], decreasing=T)[1]
+  df_uniques$neg_1[i] <- neg_list[1]
+  df_uniques$neg_len[i] <- length(neg)
   df_uniques$len1[i] <-  length(a[[1]][a[[1]]!= ""]) # reduced length
- df_uniques$sent_score[i] <- mean(sapply(b, FUN = sentiment_mathing)) # mean sentiment score 
- ## unique words 
- df_uniques$compl[i] <- length(unique(strsplit(df_uniques$lyrics[i], " ")[[1]]))
- df_uniques$compl_stem[i] <- length(unique(wordStem(strsplit(df_uniques$lyrics[i], " ")[[1]], "english")))
- ## adverbs 
- df_uniques$adverbs[i] <- sum(strsplit(df_uniques$lyrics[i], " ")[[1]] %in% adverbs)
- 
+  ## unique words 
+  df_uniques$compl[i] <- length(unique(strsplit(df_uniques$lyrics[i], " ")[[1]]))
+  df_uniques$compl_stem[i] <- length(unique(wordStem(strsplit(df_uniques$lyrics[i], " ")[[1]], "english")))
+  ## adverbs 
+  df_uniques$adverbs[i] <- sum(strsplit(df_uniques$lyrics[i], " ")[[1]] %in% adverbs)
+  
 }
 
 # positive to negative ratio
@@ -164,8 +161,13 @@ rm(pos_list)
 rm(neg_list)
 
 
-df_uniques <- df_uniques[, c("combination", "len", "len1", "duration", "tempo", "danceability", "genre", "compl", "compl_stem", "adverbs", "sent_score", "pos_1", "pos_2", "pos_3", "pos_len", "neg_1", "neg_2", "neg_3", "neg_len", "pos_neg_ratio")]
-df_lengths_genres_dates_2_1 <- left_join(df_lengths_genres_dates_1[,  c("combination", "dates", "genre")], df_uniques[, c("combination", "len", "len1", "compl", "compl_stem", "duration", "tempo", "danceability", "adverbs", "sent_score", "pos_1", "pos_2", "pos_3", "pos_len", "neg_1", "neg_2", "neg_3", "neg_len", "pos_neg_ratio")], by = "combination")
+df_uniques <- df_uniques[, c("combination", "len", "len1", "duration", "tempo", "danceability", "genre", "compl", "compl_stem", "adverbs", "sent", "pos_1", "pos_len", "neg_1", "neg_len", "pos_neg_ratio")]
+df_lengths_genres_dates_2_1 <- left_join(df_lengths_genres_dates_1[,  c("combination", "dates", "genre")], df_uniques[, c("combination", "len", "len1", "compl", "compl_stem", "duration", "tempo", "danceability", "adverbs", "sent", "pos_1", "pos_len", "neg_1", "neg_len", "pos_neg_ratio")], by = "combination")
+
+## Sentiment Scores to Binary 
+tre_best <- -0.3
+df_lengths_genres_dates_2_1$sent_2 <- 0 
+df_lengths_genres_dates_2_1$sent_2[df_lengths_genres_dates_2_1$sent > tre_best] <- 1 
 
 
 df_lengths_genres_dates  <- df_lengths_genres_dates_2_1 %>%
@@ -176,9 +178,9 @@ df_lengths_genres_dates  <- df_lengths_genres_dates_2_1 %>%
   mutate(compl = compl / len) %>% # depending on song length 
   mutate(compl_stem = compl_stem / len) %>% # depending on song length 
   mutate(adverbs_rel = adverbs / len) %>%
-  summarise(Mean_Song_Length =  ceiling(mean(len)), Mean_Red_Song_Length =  ceiling(mean(len1)), Mean_Tempo = mean(tempo, na.rm = T), Mean_Duration = mean(duration, na.rm = T),   Mean_Compl = mean(compl, na.rm = T),  Mean_Compl_Stem = mean(compl_stem, na.rm = T), Num_Adverbs = mean(adverbs, na.rm = T), Rel_Adverbs = mean(adverbs_rel, na.rm = T), Scores = mean(sent_score, na.rm = T), Mean_Pos_Neg = mean(pos_neg_ratio, na.rm = T) ) %>%
+  summarise(Mean_Song_Length =  ceiling(mean(len)), Mean_Red_Song_Length =  ceiling(mean(len1)), Mean_Tempo = mean(tempo, na.rm = T), Mean_Duration = mean(duration, na.rm = T),   Mean_Compl = mean(compl, na.rm = T),  Mean_Compl_Stem = mean(compl_stem, na.rm = T), Num_Adverbs = mean(adverbs, na.rm = T), Rel_Adverbs = mean(adverbs_rel, na.rm = T), Scores = mean(sent, na.rm = T), Scores_2  = mean(sent_2, na.rm = T),   Mean_Pos_Neg = mean(pos_neg_ratio, na.rm = T) ) %>%
   filter(genre != "unknown genre")
-  df_lengths_genres_dates$Scores[is.nan(df_lengths_genres_dates$Scores) == T] <- 0
+df_lengths_genres_dates$Scores[is.nan(df_lengths_genres_dates$Scores) == T] <- 0
 
 
 
@@ -216,8 +218,8 @@ df_pos_words <- df_lengths_genres_dates_2_1 %>%
   mutate(neg_1 = as.factor(neg_1)) %>%
   mutate(Date = as.Date(floor_date(dates, "year")))
 
-  
-  
+
+
 
 ## seasonal sentiments ##
 
@@ -241,7 +243,7 @@ df_seasonal_sent_season <- df_seasonal_sent %>%
 
 
 ### reducing DFs
-df_uniques <- df_uniques[, c("tempo", "duration", "len", "combination", "sent_score", "danceability", "pos_neg_ratio")]
+df_uniques <- df_uniques[, c("tempo", "duration", "len", "combination", "sent", "danceability", "pos_neg_ratio")]
 df_pos_words <- df_pos_words[, c("genre", "Date", "pos_1", "neg_1")]
 
 #################
@@ -280,6 +282,16 @@ write.csv(df_pos_words, "./shiny/df_pos_words.csv")
 write.csv(corr_table1, "./shiny/corr_table1.csv")
 write.csv(df_seasonal_sent_month, "./shiny/df_seasonal_sent_month.csv")
 write.csv(df_seasonal_sent_season, "./shiny/df_seasonal_sent_season.csv")
+
+### From Leo: send to shiny App on server ###
+write.csv(df_over, "/srv/shiny-server/data_science_project/df_over.csv", row.names = FALSE)
+write.csv(df_lengths_genres_dates, "/srv/shiny-server/data_science_project/df_lengths_genres_dates.csv", row.names = FALSE)
+write.csv(length_duration, "/srv/shiny-server/data_science_project/length_duration.csv", row.names = FALSE)
+write.csv(df_uniques, "/srv/shiny-server/data_science_project/df_uniques.csv", row.names = FALSE)
+write.csv(df_pos_words, "/srv/shiny-server/data_science_project/df_pos_words.csv", row.names = FALSE)
+write.csv(corr_table1, "/srv/shiny-server/data_science_project/corr_table1.csv", row.names = FALSE)
+write.csv(df_seasonal_sent_month, "/srv/shiny-server/data_science_project/df_seasonal_sent_month.csv", row.names = FALSE)
+write.csv(df_seasonal_sent_season, "/srv/shiny-server/data_science_project/df_seasonal_sent_season.csv", row.names = FALSE)
 
 
 ###############
@@ -815,7 +827,7 @@ server <- function(input, output) {
   
   output$corr_sent_tempo   <- renderPlotly({
     ggplotly(
-      ggplot(df_uniques[df_uniques$tempo > 10,], aes(x = tempo, y = sent_score, text = combination)) + 
+      ggplot(df_uniques[df_uniques$tempo > 10,], aes(x = tempo, y = sent, text = combination)) + 
         geom_point(color = "steel blue") + 
         xlab("Beats per Minute") + 
         ylab("Mean Sentiment Score") + 
@@ -832,7 +844,7 @@ server <- function(input, output) {
   
   output$corr_sent_dance   <- renderPlotly({
     ggplotly(
-      ggplot(df_uniques, aes(x = danceability, y = sent_score, text = combination)) + 
+      ggplot(df_uniques, aes(x = danceability, y = sent, text = combination)) + 
         geom_point(color = "steel blue") + 
         xlab("Danceability") + 
         ylab("Mean Sentiment Score") + 

@@ -13,6 +13,8 @@ if (!require("foreach")) install.packages("foreach")
 if (!require('spotifyr')) install.packages('spotifyr')
 if (!require("rvest")) install.packages("rvest")
 if (!require("lubridate")) install.packages("lubridate")
+if (!require("deeplr")) install.packages("deeplr")
+if (!require("xgboost")) install.packages("xgboost")
 
 
 library(spotifyr)
@@ -28,6 +30,8 @@ library(rvest)
 library(xml2)
 library(rvest)
 library(stringr)
+library(deeplr)
+library(xgboost)
 
 ## This file is for the weekly updating the DF contain songs, artists, lyrics, genres and acoustic features 
 ## It does so by the use of a repeat statement with a Sys.sleep() command at the end to run continuously but only
@@ -292,7 +296,7 @@ new_data_df <- function(base_url, date) {
   hot100 <- xml2::read_html(url)
   
   # write website content as txt file
-  xml2::write_xml(rvest::html_node(hot100, 'body'), "hot100.txt")
+  xml2::write_xml(rvest::html_node(hot100, "body"), "hot100.txt")
   
   # read in again as csv file 
   hot100csv <- read.delim("hot100.txt", sep = "|", header = FALSE)
@@ -306,18 +310,35 @@ new_data_df <- function(base_url, date) {
   # put them together as dataframe
   help_df <- data.frame(songs, artists)
   
+  
   # remove uneccessary rows and columns
   start_idx <- which(help_df[,1] == "Additional Awards")
-  help_df <- help_df[(start_idx+1):(start_idx+100), c(1,4)]
+  help_df <- help_df[(start_idx+1):nrow(help_df), c(1,4)]
   
   so <- as.character(help_df$V1)
   ar <- as.character(help_df$V1.1)
   
-  df_new <- data.frame(ar, so)
+  ar2 <- c()
+  i <- 1
+  
+  while (i <= 397) {
+    ar2 <- c(ar2, ar[i])
+    i = i + 4
+  }
+  
+  so2 <- c()
+  i <- 1
+  
+  while (i <= 397) {
+    so2 <- c(so2, so[i])
+    i = i + 4
+  }
+  
+  
+  df_new <- data.frame(ar2, so2)
   names(df_new) <- c("artists", "songs")
   df_new$dates <- date
   
-  df_new$artists
   
   # mapping &amp; to &
   df_new$artists <- stringr::str_replace(df_new$artists, "\\&amp;", "&")
@@ -361,6 +382,10 @@ last_date_online <- function(input) {
   
 }
 
+## sourcing in function for translation
+source("lyrics_translation_functions.R")
+
+
 ###########################
 ## Reading in overall DF ## 
 ###########################
@@ -368,15 +393,17 @@ last_date_online <- function(input) {
 # with original genres
 
 base_data_raw <- read.csv("base_data_raw.csv", stringsAsFactors=F)
-base_data_raw <- base_data_raw[, c("dates","chart_rank","songs","artists","lyrics","combination","artists_1" ,"artists_2","combination_1","combination_2","genre", "danceability" ,"energy","loadness","tempo","duration")]
+base_data_raw <- base_data_raw[, c("dates","chart_rank","songs","artists","lyrics","combination","artists_1" ,"artists_2","combination_1","combination_2","genre", "danceability" ,"energy","loadness","tempo","duration","sent")]
 
 # getting correct data types
 base_data_raw$dates <- as.Date(base_data_raw$dates)
 
 
+
 # with reduced genres
 base_data_cleaned <- read.csv("base_data_cleaned.csv", stringsAsFactors=F)
-base_data_cleaned <- base_data_cleaned[, c("dates","chart_rank","songs","artists","lyrics","combination","artists_1" ,"artists_2","combination_1","combination_2","genre", "danceability" ,"energy","loadness","tempo","duration")]
+base_data_cleaned <- base_data_cleaned[, c("dates","chart_rank","songs","artists","lyrics","combination","artists_1" ,"artists_2","combination_1","combination_2","genre", "danceability" ,"energy","loadness","tempo","duration", "sent")]
+
 
 # getting correct data types
 base_data_cleaned$dates <- as.Date(base_data_cleaned$dates)
@@ -427,6 +454,8 @@ df$songs <- as.character(df$songs)
 df$dates <- as.Date(df$dates)
 
 a <- 1
+d <- 1 
+
 
 for (i in 1:length(vec_missed_dates)) {
   
@@ -434,15 +463,19 @@ for (i in 1:length(vec_missed_dates)) {
   
   df$artists[a:(a+99)] <- as.character(d_new$artists)
   df$songs[a:(a+99)] <- as.character(d_new$songs)
-  df$dates[a:(a+99)] <- as.character(d_new$dates)
+  df$dates[a:(a+99)] <- rep(vec_missed_dates[d], 100)
   
   a <- a + 100
+  d <- d + 1
 }
 
 
+
+rm(a)
+rm(d)
+
 ## adding charts placement 
 df$chart_rank <-  rep(c(1:100), length(vec_missed_dates))
-
 
 ### Splitting artist and getting new combination ###
 
@@ -456,19 +489,21 @@ df$combination_2 <- paste0(df$artists_2,"  ", df$songs)
 
 
 
-########################################################################
-## Dividing into new songs (not in all previos charts) and seen songs ##
-########################################################################
+#########################################################################
+## Dividing into new songs (not in all previous charts) and seen songs ##
+#########################################################################
 
 # combinations with A match in already scraped combinations
-df_all_new_data_billboard_seen <- df[df$combination %in% (df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED$combination) ,]
+df_all_new_data_billboard_seen <- df[(df$combination %in% base_data_cleaned$combination) ,]
 
 
 # combinations with NO match in already scraped combinations
-df_all_new_data_billboard_unseen <- df[!df$combination %in% (df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED$combination) ,]
+df_all_new_data_billboard_unseen <- df[!(df$combination %in% base_data_cleaned$combination) ,]
+
 
 df_all_new_data_billboard_unseen$artists <- as.character(df_all_new_data_billboard_unseen$artists)
 df_all_new_data_billboard_unseen$songs <- as.character(df_all_new_data_billboard_unseen$songs)
+
 
 
 ##################################
@@ -489,8 +524,9 @@ for (i in 1:max_iter) {
   if (( i %% 100) == 0) {
     Sys.sleep(40)
   }  
-  
 }
+
+
 
 
 ## getting the respective acoustic features ##  
@@ -527,7 +563,9 @@ for (i in 1:max_iter) {
 
 
 
-## Getting Lyrics ####
+
+
+########### Getting Lyrics ###########
 # NEEDS function_get_lyrics file!
 
 
@@ -560,28 +598,101 @@ for (i in 1:nrow(df_all_new_data_billboard_unseen)){
 
 
 
-########## TO BE ADDED ###########################
+########## Language Detection and Translation ########## 
 
-# HIER KOMMT TRANSLATION HIN
+#### Language Detection
 
 
+vocab <- readr::read_csv("vocabulary_language_detection.csv")
+vocab <- as.vector(vocab$x)
+xgb_language_model <- xgboost::xgb.load("xgb_language_model.model")
 
+# initialize empty vector to store detected languages
+language <- character(length = nrow(df_all_new_data_billboard_unseen))
+
+# loop through new lyrics and detect language (sorry for loop, didnt try to vectorize the function :D)
+for (i in 1:nrow(df_all_new_data_billboard_unseen)){
+  # get language for every new song
+  language[i] <- detect_language(lyrics = df_all_new_data_billboard_unseen$lyrics[i],
+                                 vocab = vocab,
+                                 num_lang_identifier = num_lang_identifier,
+                                 model = xgb_language_model)
+}
+
+df_all_new_data_billboard_unseen$language <- language
+
+
+#### Now translation for the non-english songs ####
+
+## loop through the new songs and translate the non-english songs
+for (i in 1:nrow(df_all_new_data_billboard_unseen)){
+  
+  if (df_all_new_data_billboard_unseen$language[i] != "english"){
+    # need to check if deepl-key volumne still enough for the month :D
+    volume_left <- deeplr::usage2(deepl_key)$character_limit - deeplr::usage2(deepl_key)$character_count
+    char_count <- stringr::str_count(df_all_new_data_billboard_unseen$lyrics[i])
+    if (volume_left < char_count){
+      # break out of the loop if key not active any more
+      break
+    } else {
+      # otherwise translate
+      translation <- deeplr::translate2(
+        text = df_all_new_data_billboard_unseen$lyrics[i],
+        target_lang = "EN",
+        auth_key = deepl_key
+      )
+      
+      # replace lyrics by translation
+      df_all_new_data_billboard_unseen$lyrics[i] <- translation
+    }
+  }
+  
+}
+
+# drop language variable
+df_all_new_data_billboard_unseen <- df_all_new_data_billboard_unseen %>%
+  select(-language)
+
+
+gc()
+
+
+########################
+## Getting Sentiments ##
+########################
+
+
+df_all_new_data_billboard_unseen$sent <- NA
+
+for (i in 1:nrow(df_all_new_data_billboard_unseen)) {
+  
+  # removing all non-alpha-numeric chars from string! 
+  a <- str_replace_all(df_all_new_data_billboard_unseen$lyrics[i], "[^[:alnum:]]", " ")
+  if (is.na(nchar(a)) == F)  {
+    if (nchar(a) <= 3500 )  { # to ensure proper functionality!
+      sent <- sentimentr::sentiment(sentimentr::get_sentences(a) , amplifier.weight = aw_best, n.before = n_bef_best, n.after = n_af_best)
+      df_all_new_data_billboard_unseen$sent[i] <- mean(sent$sentiment)
+      
+    }
+  }
+}
 
 
 ##############################
 ## Taking care of seen data ## 
 ##############################
 
-df_all_new_data_billboard_seen  <- dplyr::left_join(df_all_new_data_billboard_seen, base_data_raw[, !names(base_data_raw) %in% c('dates', 'chart_rank', 'artists', 'songs', 'artists_1', 'artists_2', 'combination_1', 'combination_2')], by = "combination")
 
-rm(gg)
+df_all_new_data_billboard_seen <- dplyr::left_join(df_all_new_data_billboard_seen, distinct(base_data_raw[, !names(base_data_raw) %in% c('dates', 'chart_rank', 'artists', 'songs', 'artists_1', 'artists_2', 'combination_1', 'combination_2')]), by = "combination")
 
 
 ###########################################################
 ## Adding both seen and unseen data frames back together ##
 ###########################################################  
 
+
 df_new_with_features <- rbind(df_all_new_data_billboard_seen, df_all_new_data_billboard_unseen)
+
 
 rm(df_all_new_data_billboard_seen)
 rm(df_all_new_data_billboard_unseen)
@@ -597,22 +708,25 @@ df_new_with_features_reduced <- matching_genres(df_new_with_features)
 ### for DF with original genres ###
 
 # appending large DF
-
-
 base_data_raw <- dplyr::bind_rows(base_data_raw, df_new_with_features)
 
 
 # appending DF with reduced genres 
-base_data_cleaned <- dplyr::bind_rows(base_data_cleaned, df_new_with_features)
+base_data_cleaned <- dplyr::bind_rows(base_data_cleaned, df_new_with_features_reduced)
+
+
 
 rm(df_new_with_features)
+rm(df_new_with_features_reduced)
 
 
 ## saving results ##
 
-write.csv(base_data_raw, "base_data_raw.csv")
+write.csv(base_data_raw, "base_data_raw.csv",
+          row.names = FALSE)
 
-write.csv(base_data_cleaned, "base_data_cleaned.csv")
+write.csv(base_data_cleaned, "base_data_cleaned.csv",
+          row.names = FALSE)
 
 
 
@@ -622,6 +736,8 @@ write.csv(base_data_cleaned, "base_data_cleaned.csv")
 
 ## sourcing 
 
+
+source("pronoun_analysis_for_update.R")  ## check with dataset names again
 
 
 

@@ -3,7 +3,6 @@
 ###############################
 
 
-
 if (!require("jsonlite")) install.packages("jsonlite")
 if (!require("httr")) install.packages("httr")
 if (!require("rlist")) install.packages("rlist")
@@ -15,6 +14,10 @@ if (!require("rvest")) install.packages("rvest")
 if (!require("lubridate")) install.packages("lubridate")
 if (!require("deeplr")) install.packages("deeplr")
 if (!require("xgboost")) install.packages("xgboost")
+if (!require("stringi")) install.packages("stringi")
+if (!require("httr")) install.packages("httr")
+if (!require("jsonlite")) install.packages("jsonlite")
+if (!require("curl")) install.packages("curl")
 
 
 library(spotifyr)
@@ -32,6 +35,13 @@ library(rvest)
 library(stringr)
 library(deeplr)
 library(xgboost)
+library(dbscan)
+library(stringi)
+library(httr)
+library(jsonlite)
+library(curl)
+
+
 
 ## This file is for the weekly updating the DF contain songs, artists, lyrics, genres and acoustic features 
 ## It does so by the use of a repeat statement with a Sys.sleep() command at the end to run continuously but only
@@ -77,9 +87,113 @@ Sys.setenv(GENIUS_API_TOKEN = "iZdkkCTGhwiZKyjrW6NjTaWhAML-6clc2yg2o77_BCn8CPcEy
 genius_token()
 
 
+### Last FM API
+
+fm_url <- "http://ws.audioscrobbler.com/2.0/?method=track.getInfo&api_key="
+api_key_last_fm <- "a2e1207d25ce4237d86ded2d073fabea"
+string_1 <- "&artist="
+string_2 <- "&track="
+string_3 <- "&format=json"
+
+
 ########################
 ## Relevant functions ##
 ########################
+
+genres_mapping <- readxl::read_excel("unique_genres.xlsx")
+genres_mapping <- genres_mapping[,c("original_genre", "new_genre")]
+
+
+
+get_lastfm_genre <- function(artist, artist_1, artist_2, song ) {
+  
+  info_indication <- 0 
+  
+  string_song <- tolower(gsub(" ", "",song))
+  string_song <-  str_replace_all(string_song, "[^[:alnum:]]", "")
+  
+  url_1 <- paste0(fm_url, api_key_last_fm, string_1, tolower(gsub(" ", "",artist)), string_2, string_song, string_3)
+  
+  
+  res_1 <- httr::GET(url_1)
+  aa1 <- jsonlite::parse_json(res_1)
+  tag_1 <- aa$track$toptags$tag[1][[1]]
+  
+  
+  if (is.null(tag_1) == F) {
+    
+    info_indication <- 1
+    genre <- as.character(aa$track$toptags$tag[[1]]$name)
+    
+  } else {    # case of artist_1
+    
+    url_2 <- paste0(fm_url, api_key_last_fm, string_1, tolower(gsub(" ", "",artist_1)), string_2, string_song, string_3)
+    res_2 <- httr::GET(url_1)
+    aa2 <- jsonlite::parse_json(res_1)
+    tag_2 <- aa2$track$toptags$tag[1][[1]]
+    
+    if (is.null(tag_1) == F) {
+      info_indication <- 2
+      genre <- as.character(aa2$track$toptags$tag_2[[1]]$name)
+      
+    } else {     # case of artist_2
+      
+      url_3 <- paste0(fm_url, api_key_last_fm, string_1, tolower(gsub(" ", "",artist_2)), string_2, string_song, string_3)
+      res_3 <- httr::GET(url_1)
+      aa3 <- jsonlite::parse_json(res_1)
+      tag_3 <- aa3$track$toptags$tag[1][[1]]
+      
+      if (is.null(tag_1) == F) {
+        
+        info_indication <- 3
+        genre <- as.character(aa3$track$toptags$tag_3[[1]]$name)
+        
+      } else {
+        info_indication <- 4 
+        genre <- NA
+      } } } 
+  
+  
+  # replacing genre not in known genres
+  genre <- tolower(genre)
+  
+  if (is.na(genre) == F) { 
+    if ((genre %in%  genres_mapping$original_genre) == F)  {
+      
+      if (info_indication == 1){
+        tag_1 <- aa$track$toptags$tag[1][[1]]
+        if (is.null(tag_1) == F) {
+          genre <- tag_1
+        }}
+      
+      if (info_indication == 2){
+        tag_2 <- aa2$track$toptags$tag[1][[1]]
+        if (is.null(tag_2) == F) {
+          genre <- tag_2
+        }}
+      
+      if (info_indication == 3){
+        tag_3 <- aa3$track$toptags$tag[1][[1]]
+        if (is.null(tag_3) == F) {
+          genre <- tag_3
+        }}
+    }    
+  } 
+  # checking if genre can be used at all 
+  
+  genre <- tolower(genre)
+  
+  if ( (genre %in% genres_mapping$original_genre) == F)  {
+    genre <- NA
+  }
+  
+  return(genre)
+  
+}
+
+
+## possibly function for error control 
+poss_fm_genre <- possibly(get_lastfm_genre, otherwise = NA)
 
 
 ## function to  get song lyrics from artist song title combination
@@ -261,8 +375,6 @@ matching_genres <- function(df) {
   # function needs a df with column "genre" as input. 
   # Also the matching excel file must be read in 
   
-  genres_mapping <- readxl::read_excel("unique_genres.xlsx")
-  genres_mapping <- genres_mapping[,c("original_genre", "new_genre")]
   
   for (i in 1:nrow(df)) {
     
@@ -471,6 +583,8 @@ for (i in 1:length(vec_missed_dates)) {
 
 
 
+
+
 rm(a)
 rm(d)
 
@@ -512,15 +626,33 @@ df_all_new_data_billboard_unseen$songs <- as.character(df_all_new_data_billboard
 
 ## getting the respective genres ## 
 
-df_all_new_data_billboard_unseen$genre <- "c"
 
+## frist trying per song genre with Last FM API
+
+df_all_new_data_billboard_unseen$genre <- "c"
 max_iter <- nrow(df_all_new_data_billboard_unseen)
+
+
+poss_fm_genre(artist, artist_1, artist_2, song)
 
 for (i in 1:max_iter) {
   
   # getting correct genre  
-  df_all_new_data_billboard_unseen$genre[i] <- get_genre_from_combination(df_all_new_data_billboard_unseen$combination[i], df_all_new_data_billboard_unseen$combination_1[i], df_all_new_data_billboard_unseen$combination_2[i], df_all_new_data_billboard_unseen$artists[i], df_all_new_data_billboard_unseen$artists_1[i], df_all_new_data_billboard_unseen$artists_2[i])
+  df_all_new_data_billboard_unseen$genre[i] <- poss_fm_genre(df_all_new_data_billboard_unseen$artists[i], df_all_new_data_billboard_unseen$artists_1[i], df_all_new_data_billboard_unseen$artist_2[i], df_all_new_data_billboard_unseen$songs[i])
   
+  
+}  
+
+##secondly trying with Spotify API
+
+for (i in 1:max_iter) {
+  
+  if ( (df_all_new_data_billboard_unseen$genre[i] %in% genres_mapping$original_genre) == F) { 
+    
+    # getting correct genre  
+    df_all_new_data_billboard_unseen$genre[i] <- get_genre_from_combination(df_all_new_data_billboard_unseen$combination[i], df_all_new_data_billboard_unseen$combination_1[i], df_all_new_data_billboard_unseen$combination_2[i], df_all_new_data_billboard_unseen$artists[i], df_all_new_data_billboard_unseen$artists_1[i], df_all_new_data_billboard_unseen$artists_2[i])
+    
+  }
   if (( i %% 100) == 0) {
     Sys.sleep(40)
   }  
@@ -589,10 +721,10 @@ for (i in 1:nrow(df_all_new_data_billboard_unseen)){
   # fill in lyrics
   df_all_new_data_billboard_unseen$lyrics[i] <- l
   
-  success <- sum(!is.na(df_all_new_data_billboard_unseen$lyrics))
-  if(i%%10 == 0){
-    print(paste0(i, "     Success Count: ", success))
-  }
+  #  success <- sum(!is.na(df_all_new_data_billboard_unseen$lyrics))
+  #  if(i%%10 == 0){
+  #    print(paste0(i, "     Success Count: ", success))
+  #  }
   
 }
 
@@ -661,21 +793,42 @@ gc()
 ## Getting Sentiments ##
 ########################
 
+aw_best <- 1
+n_bef_best <- 6
+n_af_best <- 3 
+tre_best <- -0.3
 
 df_all_new_data_billboard_unseen$sent <- NA
 
 for (i in 1:nrow(df_all_new_data_billboard_unseen)) {
   
-  # removing all non-alpha-numeric chars from string! 
-  a <- str_replace_all(df_all_new_data_billboard_unseen$lyrics[i], "[^[:alnum:]]", " ")
-  if (is.na(nchar(a)) == F)  {
-    if (nchar(a) <= 3500 )  { # to ensure proper functionality!
-      sent <- sentimentr::sentiment(sentimentr::get_sentences(a) , amplifier.weight = aw_best, n.before = n_bef_best, n.after = n_af_best)
-      df_all_new_data_billboard_unseen$sent[i] <- mean(sent$sentiment)
+  
+  # overall length 
+  len_lyrics <- length(str_split(df_all_new_data_billboard_unseen$lyrics[i], " ")[[1]])
+  
+  if (is.na(len_lyrics) == F)  { # to ensure functionality
+    if ( len_lyrics < 5000) { # for reasons of computational burden
+      
+      
+      df_all_new_data_billboard_unseen$lyrics[i] <- stri_encode(df_all_new_data_billboard_unseen$lyrics[i] , "", "UTF-8")
+      
+      # getting sentences 
+      sent <- sentimentr::get_sentences(df_all_new_data_billboard_unseen$lyrics[i])
+      
+      # removing all non-alpha-numeric chars from string - per sentence! 
+      sent_rem <- str_replace_all(sent[1][[1]], "[^[:alnum:]]", " ")
+      pred   <- sentimentr::sentiment(sentimentr::get_sentences(sent_rem)    , amplifier.weight = aw_best, n.before = n_bef_best, n.after = n_af_best)
+      df_all_new_data_billboard_unseen$sent[i] <- mean(pred$sentiment)
       
     }
   }
 }
+
+rm(aw_best)
+rm(n_bef_best)
+rm(n_af_best)
+rm(tre_best)
+
 
 
 ##############################
@@ -683,8 +836,10 @@ for (i in 1:nrow(df_all_new_data_billboard_unseen)) {
 ##############################
 
 
-df_all_new_data_billboard_seen <- dplyr::left_join(df_all_new_data_billboard_seen, distinct(base_data_raw[, !names(base_data_raw) %in% c('dates', 'chart_rank', 'artists', 'songs', 'artists_1', 'artists_2', 'combination_1', 'combination_2')]), by = "combination")
+df_all_new_data_billboard_seen_2 <- dplyr::left_join(df_all_new_data_billboard_seen, distinct(base_data_raw[, !names(base_data_raw) %in% c('dates', 'chart_rank', 'artists', 'songs', 'artists_1', 'artists_2', 'combination_1', 'combination_2')]), by = "combination")
+df_all_new_data_billboard_seen <- distinct(df_all_new_data_billboard_seen_2, combination, .keep_all = T)
 
+rm(df_all_new_data_billboard_seen_2)
 
 ###########################################################
 ## Adding both seen and unseen data frames back together ##

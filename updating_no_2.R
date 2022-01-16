@@ -103,6 +103,7 @@ string_3 <- "&format=json"
 genres_mapping <- readxl::read_excel("unique_genres.xlsx")
 genres_mapping <- genres_mapping[,c("original_genre", "new_genre")]
 
+#
 
 
 get_lastfm_genre <- function(artist, artist_1, artist_2, song ) {

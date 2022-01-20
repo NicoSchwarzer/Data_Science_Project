@@ -1,4 +1,4 @@
-#install.packages("shinyjs")
+
 
 jscode <- "shinyjs.refresh = function() { history.go(0); }"
 
@@ -41,6 +41,8 @@ he_data <- data.table::fread("he_data.csv")
 df_sents_year <- data.table::fread("df_sents_year.csv")
 df_sents_genre_year <- data.table::fread("df_sents_genre_year.csv")
 df_historical <- data.table::fread("df_historical.csv")
+similarity_df <- read_csv("similarity.csv")
+
 
 
 server <- function(input, output) {
@@ -48,16 +50,18 @@ server <- function(input, output) {
   #######################
   ## Introductory Page ## 
   #######################
-  
+
   df_over$`First date` <- as.character(df_over$`First date`)
   df_over$`Most recent date` <- as.character(df_over$`Most recent date`)
   df_over$`Number of songs scraped` <- as.integer(df_over$`Number of songs scraped`)
   df_over$`Songs with available lyrics` <- as.integer(df_over$`Songs with available lyrics`)
   df_over$`Unique available songs` <- as.integer(df_over$`Unique available songs`)
+  similarity_df <- similarity_df[(similarity_df$genre != "unknown genre"),]
+  similarity_df$'First Chart Appearance' <-     as.Date(similarity_df$first_appearance)
   
   output$overview_table <- renderTable({
     df_over
-  })
+     })
   
   
   ###########################
@@ -70,9 +74,9 @@ server <- function(input, output) {
     })
   })
   
+
   
-  
-  
+
   output$plot_complexity_1 <- renderPlotly({
     
     plotData <- data.frame(df_lengths_genres_dates[df_lengths_genres_dates$genre %in% input$Genre_compl_1, ])
@@ -252,8 +256,8 @@ server <- function(input, output) {
     )
   })
   
-  
-  
+    
+    
   
   #output$adverb_slider <- renderPlotly({
   #  df_lengths_genres_dates %>%
@@ -284,7 +288,7 @@ server <- function(input, output) {
         ggtitle("Mean Sentiment Score per song")+
         stat_smooth(method=lm, colour = "black") + 
         labs(  subtitle="Overall trend in black") + 
-        scale_color_brewer(palette = "Blues") + 
+#        scale_color_brewer(palette = "Blues") + 
         theme(plot.title = element_text(size = 16, face = "bold", hjust = 0.5),
               axis.title=element_text(size=14,face="bold")  ,
               axis.text=element_text(size= 13, face="bold"),
@@ -297,16 +301,16 @@ server <- function(input, output) {
   
   observeEvent(input$button_sentiment_1, {
     toggle('text_div_1')
-    output$text_sent_1 <- renderText({"When analyzing the genres, . We have used a so-called valence shift algorithm though R's sentimentR package. This algorithm is based on identifying positively and negatively connotated words alongside a magnitude of connotation based on the Syuzhet Sentiment dataframe. Next, for each of these words, the n preceding and proceding words are taken into account. These are tagged as neutral, negators, amplifiers, de-amplifiers or adversarial conjuctions. Based on these, the sentiment score of each polarized word is repeatedly mutlitplied by values which can be set. E.g. negators such as  ,not' cause a multiplication of the sentiment score by a negative number, amplifiers such as ,very' might cause a multiplication of the sentiment score by a positive number larger than one and de-amplifiers such as ,a bit' might cause a multiplication of the sentiment score by a positive number below one.  All hyperparameters of this algorithm were optimized based on a labelled dataset of Lyrics and sentiments resulting in a F1 Score of 0.91."
-    })
+    output$text_sent_1 <- renderText({"We have used a so-called valence shift algorithm though R’s sentimentR package. This algorithm is based on identifying positively and negatively connotated words alongside a magnitude of connotation based on the Syuzhet Sentiment dataframe. Next, for each of these words, the n preceding and proceding words are taken into account. These are tagged as neutral, negators, amplifiers, de-amplifiers or adversarial conjuctions. Based on these, the sentiment score of each polarized word is repeatedly mutlitplied by values which can be set. E.g. negators such as  ‚not‘ cause a multiplication of the sentiment score by a negative number, amplifiers such as ‚very‘ might cause a multiplication of the sentiment score by a positive number larger than one and de-amplifiers such as ‚a bit‘ might cause a multiplication of the sentiment score by a positive number below one.  All hyperparameters of this algorithm were optimized based on a labelled dataset of Lyrics and sentiments resulting in a F1 Score of 0.91."
+      })
     output$text_sent_2 <- renderText({"         "})    
     output$text_sent_3 <- renderText({" Consider the following sources:"})
-    output$text_sent_4 <- renderText({"Rinker, Tyler (2021), SentimentR, https://github.com/trinker/sentimentr "})
-    output$text_sent_5 <- renderText({"�ano, Erion; Morisio, Maurizio (2017). MoodyLyrics: A Sentiment Annotated Lyrics Dataset. In: 2017 International Conference on Intelligent Systems, Metaheuristics & Swarm Intelligence, Hong Kong, March, 2017. pp. 118-124"})
+    output$text_sent_4 <- renderText({"Rinker, Tyler (2021), SentimentR, https://github.com/trinker/sentimentr"})
+    output$text_sent_5 <- renderText({"Çano, Erion; Morisio, Maurizio (2017). MoodyLyrics: A Sentiment Annotated Lyrics Dataset. In: 2017 International Conference on Intelligent Systems, Metaheuristics & Swarm Intelligence, Hong Kong, March, 2017. pp. 118-124"})
     output$text_sent_6 <- renderText({"Lockers, M. L. (2017), Syuzhet: Extract sentiment and plot arcs from text. Retrieved from https://github.com/mjockers/syuzhet"})
     output$text_sent_7 <- renderText({"Hu, M., & Liu, B. (2004,. Mining opinion features in customer reviews. National Conference on Artificial Intelligence."})
-  })
-  
+    })
+
   
   output$plot_sentiment_2 <- renderPlot({
     
@@ -320,7 +324,7 @@ server <- function(input, output) {
             axis.title=element_text(size=16,face="bold")  ,
             axis.text=element_text(size= 16, face="bold"),
             plot.subtitle = element_text(size = 16, hjust = 0.5)) + 
-      
+
       # May 1975 - End of Vietnam War
       geom_vline(xintercept =   df_sents_year$Date[186], color = "black", linetype="dotted", size = 1.2)  + 
       geom_text(aes(x=df_sents_year$Date[186], label="1", y=-0.1), colour="steel blue", angle=0, vjust = 1, text=element_text(size=14) , size = 8) +
@@ -364,8 +368,8 @@ server <- function(input, output) {
       # March 2020 - First Wave of Covid Pandemic commences
       geom_vline(xintercept =   df_sents_year$Date[723], color = "black", linetype="dotted", size = 1.2) +
       geom_text(aes(x=df_sents_year$Date[723], label="7", y=-0.1), colour="steel blue", angle=0, vjust = 1, text=element_text(size=14) , size = 8) #+ 
-    
-    # September 2021 - Second Wave of Covid Pandemic commences
+      
+      # September 2021 - Second Wave of Covid Pandemic commences
     #  geom_vline(xintercept =   df_sents_year$Date[739], color = "black", linetype="dotted", size = 1.2) + 
     #  geom_text(aes(x=df_sents_year$Date[739], label="8", y=-0.1), colour="steel blue", angle=0, vjust = 1, text=element_text(size=54) , size = 8)
     
@@ -504,6 +508,8 @@ server <- function(input, output) {
   })
   
   output$sent_months <- renderPlot({
+    df_seasonal_sent_month$Month <- c("01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12") 
+
     ggplot(df_seasonal_sent_month, aes(x = Month, y = x)) + 
       geom_bar(stat = "identity", fill = "steel blue") + 
       xlab("Months") + 
@@ -516,7 +522,8 @@ server <- function(input, output) {
             legend.text = element_text(size=12), 
             legend.title = element_text(size=13 , face="bold",  hjust = 0.5)) + 
       scale_x_discrete(labels=c("01" = "Jan", "02" = "Feb", "03" = "Mar", "04" = "Apr", "05" = "May", "06" = "Jun", "07" = "Jul", "08" = "Aug", "09" = "Sep", "10" = "Oct", "11" = "Nov", "12" = "Dec"))
-  })
+  
+    })
   
   
   ########################  
@@ -822,5 +829,73 @@ server <- function(input, output) {
   })
   
   
+  ### similarity analysis 
+  
+  
+  output$similarity_time <- renderPlot({
+    ggplot(similarity_df, aes(x = p1, y = p2, text = combination)) + 
+      geom_point(size = 0.35, aes(color = `First Chart Appearance` ) )  + 
+      xlab("Principal Component 1 Values") + 
+      ylab("Principal Component 2 Values") + 
+      ggtitle("PCA of SBERT Embeddings across genre")+
+      theme(plot.title = element_text(size = 16, face = "bold", hjust = 0.5),
+            axis.title=element_text(size=14,face="bold")  ,
+            axis.text=element_text(size= 13, face="bold"),
+            plot.subtitle = element_text(size = 13, hjust = 0.5),
+            legend.text = element_text(size=12), 
+            legend.title = element_text(size=13 , face="bold",  hjust = 0.5),
+            legend.key.size = unit(1, "cm"),
+            legend.key.width = unit(0.5,"cm") ) 
+    
+  })
+  
+  
+  
+  output$similarity_genre <- renderPlot({
+  df <- similarity_df[similarity_df$genre %in% input$genre_similarity_select , ]
+  ggplot(df, aes(x = p1, y = p2, text = combination)) + 
+    geom_point(size = 0.75, aes(color = genre)) + #  color = "steel blue") + 
+    xlab("Principal Component 1 Values") + 
+    ylab("Principal Component 2 Values") + 
+    ggtitle("PCA of SBERT Embeddings across genre")+
+    theme(plot.title = element_text(size = 17, face = "bold", hjust = 0.5),
+          axis.title=element_text(size=14,face="bold")  ,
+          axis.text=element_text(size= 13, face="bold"),
+          plot.subtitle = element_text(size = 13, hjust = 0.5),
+          legend.text = element_text(size=12), 
+          legend.title = element_text(size=13 , face="bold",  hjust = 0.5))
+  })
+  
+  
+  observeEvent(input$button_similarity_1, {
+    toggle('text_div_2')
+    output$text_sim_1 <- renderText({"For obtainining the lyrical similarity, we have embedded all cleaned lyrics using a Sentence BERT Model, a complex Deep Learning Model which outputs the semantic information per sentence or text in a high-dimensional space. These have been the input to the Principal Component Analysis used for mapping the high dimensional space to a 2d-subspace."})
+  
+    output$text_sim_2 <- renderText({"         "})    
+    output$text_sim_3 <- renderText({" Consider the following sources:"})
+    output$text_sim_4 <- renderText({"Reimers, N., & Gurevych, I. (2019). Sentence-bert: Sentence embeddings using siamese bert-networks. arXiv preprint arXiv:1908.10084."})
+    output$text_sim_5 <- renderText({"HuggingFace (2021), Bert base NLI mean Tokens, URL:https://huggingface.co/sentence-transformers/bert-base-nli-mean-tokens "})
+  })
+  
+  
+
+    
+  
+  output$songs <- renderText({
+    if (nrow(similarity_df[similarity_df$combination == input$similarity_string, ]) > 0) {
+      text_out_1 <- "The threee most similar songs lyrics-wise are: 1) "
+      text_out_2 <- as.character(similarity_df$s1[similarity_df$combination == input$similarity_string] )
+      text_out_3 <- ", 2) "
+      text_out_4 <- as.character(similarity_df$s2[similarity_df$combination == input$similarity_string] )
+      text_out_5 <- " and 3) "
+      text_out_6 <- as.character(similarity_df$s3[similarity_df$combination == input$similarity_string] )
+      text_out_7 <- "!"
+      text_out <- paste0(text_out_1, text_out_2, text_out_3, text_out_4, text_out_5, text_out_6, text_out_7)
+    } else {
+      text_out <- "This combination did not match any song. Perhaps it has never entered the Billboard Hot 100. Try another Style of Spelling or another song."
+    }
+    
+    #text_out
+  })
 } ## end of server function 
 

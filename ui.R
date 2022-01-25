@@ -29,7 +29,7 @@ ui <- navbarPage(
                tags$h4("This R-Shiny Web-Application displays the result of a University Project of the M.Sc. Program Data Science in Business and Economics and Tübingen University. It bundles all relevant steps of a Data Science Project - the last of which is an interactive display of the results residing here."),
              ),
              fluidRow(
-               tags$h4("The goal of the Project is to gather insights as to how Song Lyrics of very popular songs have evolved over time using NLP tools. Since To this aim, we have scraped all hot 100 Billboard charts from 1960 until today and used the Genuis API to retrieve the lyrics. The Billboard Top 100 were choosen because of their availability in decades past. It is noteworthy, still, that they do not represent the music industry as a whole. Our findings thus apply to popular or economically spoken the demand of music (not its supply). Also, we have gathered genre information with use of the Spotify API and assigned each genre to overarching genres by hand. The Spotify API was also used to obtain information on on each song's acoustic features. The latter include Tempo (BPM), Duration (in seconds), Energy (perceptual measure of a song's liveliness) and Danceability (Suitability for dancing based on rythmic features).  Going further, we have trained and implemented a binary classifier to detect of the songs lyrics are in english and made use of the DeepL API if need be for translation."),
+               tags$h4("The goal of the Project is to gather insights as to how Song Lyrics of very popular songs have evolved over time using NLP tools. To this aim, we have scraped all hot 100 Billboard charts from 1960 until today and used the Genuis API to retrieve the lyrics. The Billboard Top 100 were choosen because of their availability in decades past. It is noteworthy, still, that they do not represent the music industry as a whole. Our findings thus apply to popular or economically spoken the demand of music (not its supply). Also, we have gathered genre information with use of the Spotify API and assigned each genre to overarching genres by hand. The Spotify API was also used to obtain information on on each song's acoustic features. The latter include Tempo (BPM), Duration (in seconds), Energy (perceptual measure of a song's liveliness) and Danceability (Suitability for dancing based on rythmic features).  Going further, we have trained and implemented a binary classifier to detect of the songs lyrics are in english and made use of the DeepL API if need be for translation."),
              ),
              fluidRow(
                tags$h4("Obviously, each week, a new hot 100 Chart List is released. To cope with this, we have also implemented a mechanism that performs all above mentioned steps once a week and appends our overall database. As a next step, the lyrics are cleaned and and manipulated for the further analytics tasks. As we gather more lytics each week, all post-processign steps are also re-run on a weekly basis."),
@@ -291,7 +291,69 @@ ui <- navbarPage(
            )
             ) ,
   
-  tabPanel("Topic Modelling"),
+tabPanel("Topic Modelling",
+         
+         ## Topic Modelling ## 
+         
+         fluidPage(
+           
+           ### Topic Modelling  ###
+           
+           
+           fluidRow(
+             tags$h3("Analysing the Topics of Chart Songs across time and genre")
+           ),
+           
+           fluidRow(
+             tags$h4("The topics used in the Billboard Chart songs is a vital point of analysis. However, deriving the latter is not straight-forwarda topic as topics for each aren't provded and need to be inferred. Based on an unsupervised Deep Learning method, five key topics were determined and the two semantically closest topics to the lyrical content were deduced per song. Below is an overview of both the development of the shares of the semantically closest topics to the lyrics across time and the co-occurences of the topics. The latter shows the shares of topics which were the second closest to the lyrics when the selected genre was the closest."
+             )),
+           
+           fluidRow(width=12,
+                    column(width = 7,
+                           tags$h4("  ") ),
+                    column(width=5,
+                           selectInput("topic_select", "Select a Topic:", choices = names(co_occuring_df)[2:6], multiple = F, selected = "Love and Romance", selectize = TRUE, width = NULL, size = NULL),
+                    )),
+           
+           fluidRow(width = 12, 
+                    
+                    column(width = 7,
+                          plotOutput("plot_topics_time")
+                    ),
+                    column(width = 5,
+                           plotOutput("plot_co_topics")
+                    )),
+           
+           fluidRow(
+             tags$h4("One can also differentiate by genre and analyse the share of main topics assosiated with each genre and the development of the shares across time. Select a genre below to and take a look at it's assosiated topics."
+             )),
+           fluidRow(width=12,
+                    column(width=12,
+                           selectInput("topic_genre_select", "Select a Genre:", choices = unique(df_topics_genre_year$genre), multiple = F, selected = "rock", selectize = TRUE, width = NULL, size = NULL),
+                    )),
+           fluidRow(width = 12, 
+                    
+                    column(width = 7,
+                           plotOutput("plot_genre_topics_time")
+                    ),
+                    column(width = 5,
+                           plotOutput("plot_genre_topics")
+                    )),
+           
+           actionButton("button_topic_1", "Get more info "),
+           hidden(
+             div(id='text_div_3',
+                 shiny::textOutput("text_topic_1"),
+                 shiny::textOutput("text_topic_2"),
+                 shiny::textOutput("text_topic_3"),
+                 shiny::textOutput("text_topic_4"),
+                 shiny::textOutput("text_topic_5")
+             )
+           ),
+           
+
+         )),
+
   tabPanel("Pronoun Analysis",
            
            fluidPage(
@@ -351,10 +413,12 @@ ui <- navbarPage(
            
            ) ## closes the fluidPage
            ), ## closes tabPanel Prounoun Analysis
-  
+
+
   tabPanel("Similarity Analysis",
            
            fluidPage(
+             
    ### Similarity Analysis ###
 
 
@@ -374,7 +438,7 @@ fluidRow(
   ),
   fluidRow(width=12,
          column(width=12,
-            selectInput("genre_similarity_select", "Select genres:", choices = similarity_df$genre, multiple = T, selected = c("rock", "folk"), selectize = TRUE, width = NULL, size = NULL),
+            selectInput("genre_similarity_select", "Select genres:", choices = similarity_topics_df$genre, multiple = T, selected = c("rock", "folk"), selectize = TRUE, width = NULL, size = NULL),
          )),
   fluidRow(width = 12,
          column(width = 12,
@@ -404,11 +468,14 @@ fluidRow(
 ) ),
 fluidRow(width=12,
          column(width=12,
-                selectInput("similarity_string", "Select genres:", choices = similarity_df$combination, multiple = F, selected = "Adele  Hello"),
+                selectInput("similarity_string", "Select genres:", choices = similarity_topics_df$combination, multiple = F, selected = "Adele  Hello"),
                 verbatimTextOutput("songs")
 ))
   
 ))
+
+
+
 
 ) ## end of ui
 

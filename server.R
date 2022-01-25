@@ -41,7 +41,11 @@ he_data <- data.table::fread("he_data.csv")
 df_sents_year <- data.table::fread("df_sents_year.csv")
 df_sents_genre_year <- data.table::fread("df_sents_genre_year.csv")
 df_historical <- data.table::fread("df_historical.csv")
-similarity_df <- read_csv("similarity.csv")
+df_topics_genre_year <- data.table::fread("df_topics_genre_year.csv")
+df_topics_year <- data.table::fread("df_topics_year.csv")
+prep_genre <- data.table::fread("prep_genre.csv")
+co_occuring_df <- data.table::fread("co_occuring_df.csv")
+topics_sent <- data.table::fread("topics_sent.csv")
 
 
 
@@ -56,8 +60,8 @@ server <- function(input, output) {
   df_over$`Number of songs scraped` <- as.integer(df_over$`Number of songs scraped`)
   df_over$`Songs with available lyrics` <- as.integer(df_over$`Songs with available lyrics`)
   df_over$`Unique available songs` <- as.integer(df_over$`Unique available songs`)
-  similarity_df <- similarity_df[(similarity_df$genre != "unknown genre"),]
-  similarity_df$'First Chart Appearance' <-     as.Date(similarity_df$first_appearance)
+  similarity_topics_df <- similarity_topics_df[(similarity_topics_df$genre != "unknown genre"),]
+  similarity_topics_df$'First Chart Appearance' <-     as.Date(similarity_topics_df$first_appearance)
   
   output$overview_table <- renderTable({
     df_over
@@ -526,6 +530,108 @@ server <- function(input, output) {
     })
   
   
+  #####################
+  ## Topic Modelling ##
+  #####################
+  
+  output$plot_topics_time <- renderPlot({
+    
+    df_topics_year2  <- df_topics_year %>%
+      gather(key = "Topic", value = "Share", -Date)
+    
+    ggplot(data= df_topics_year2 , aes(x=Date, y = Share)) + 
+      geom_line(aes(color = Topic)) +
+      ggtitle("Chart topics across time") + 
+      xlab("Time") + 
+      ylab("Share of topics in Charts") + 
+      theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5),
+            axis.title=element_text(size=16,face="bold")  ,
+            axis.text=element_text(size= 16, face="bold"),
+            legend.title = element_text(size= 16, face="bold"),
+            legend.text = element_text(size = 14) )
+    
+  })
+  
+  
+  output$plot_co_topics <- renderPlot({
+  
+  topic <- input$topic_select
+  #topic <- "Love and Romance"
+  
+  co_occuring_df <- data.frame(co_occuring_df)
+  names(co_occuring_df) <- c("Topics", "Sadness and Critique", "Love and Romance" , "Motivation and Ambitions" , "Affluence and Fame" ,  "Feelgood, friends and Party")
+  data <- co_occuring_df[, c("Topics", topic)]
+  
+  data2 <- data[(data$Topics != topic), ]
+  
+  ggplot(data2[data2$Topics != topic,], aes(x="", y= data2[1:4,2]  , fill = Topics)) +
+    geom_bar(stat="identity", width = 1) + 
+    coord_polar("y", start=0) + 
+    theme_void() + 
+    ggtitle("Share of second assigned Topic") + 
+    scale_fill_brewer(palette = "Blues") + 
+    theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5),
+          legend.title = element_text(size= 16, face="bold"),
+          legend.text = element_text(size = 14) )
+  
+  
+    })
+  
+  output$plot_genre_topics_time <- renderPlot({
+  
+  df <- df_topics_genre_year[(df_topics_genre_year$genre == input$topic_genre_select),]  
+  
+  df <- df %>%
+    gather(key = "Topic", value = "Share", -c(Date, genre))
+  
+  ggplot(data= df , aes(x=Date, y = Share)) + 
+    geom_line(aes(color = Topic)) +
+    ggtitle(paste0("Chart topics - " , stringr::str_to_title(as.character( input$topic_genre_select)), " Songs" )) + 
+    xlab("Time") + 
+    ylab("Share of topics in Charts" ) + 
+    theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5),
+          axis.title=element_text(size=16,face="bold")  ,
+          axis.text=element_text(size= 16, face="bold"),
+          legend.title = element_text(size= 16, face="bold"),
+          legend.text = element_text(size = 14) )
+  
+  })
+
+  output$plot_genre_topics <- renderPlot({
+  
+  prep_genre <- data.frame(prep_genre)
+  
+  df <- prep_genre[(prep_genre$genre == input$topic_genre_select), ]
+  names(df)[2:6] <- c("Sadness and Critique", "Love and Romance" , "Motivation and Ambitions" , "Affluence and Fame" ,  "Feelgood, friends and Party")
+  
+  df <- df %>%
+    gather(key = "Topic", value = "Share", -genre)
+  
+  
+  ggplot(df , aes(x="", y= Share  , fill = Topic )) +
+    geom_bar(stat="identity", width = 1) + 
+    coord_polar("y", start=0) + 
+    theme_void() + 
+    ggtitle(paste0("Topics Share - ", stringr::str_to_title(as.character( input$topic_genre_select)), " Songs" )) + 
+    scale_fill_brewer(palette = "Blues") + 
+    theme(plot.title = element_text(size = 20, face = "bold", hjust = 0.5),
+          legend.title = element_text(size= 16, face="bold"),
+          legend.text = element_text(size = 14) )
+  
+  
+  })
+  
+  observeEvent(input$button_topic_1, {
+    toggle('text_div_3')
+    output$text_topic_1 <- renderText({"For hits taks of unsupervised clasification, we used Sentence Transformer, more specifically the pretrained All-mpnet-base-v2 BERT model to obtain semantically meaningful embeddings of all lyrics and of all strings describing the topics. The latter is a Deep Learning Approach which outputs the semantic information on a per-text basis. The closest two topic embeddings (based on cosine-similarity) were deduced. This procedure was manually tested on a high number of songs and was found to function really well."})
+    output$text_topic_2 <- renderText({"         "})    
+    output$text_topic_3 <- renderText({" Consider the following sources:"})
+    output$text_topic_4 <- renderText({"HuggingFace (2020): BERT, URL: https://huggingface.co/docs/transformers/model_doc/bert."})
+    output$text_topic_5 <- renderText({"HuggingFace (2021), Model All-mpnet-base-v2, URL: https://huggingface.co/sentence-transformers/all-mpnet-base-v2 Reimers, N., & Gurevych, I. (2019). Sentence-bert: Sentence embeddings using siamese bert-networks. arXiv preprint arXiv:1908.10084."})
+    })
+  
+  
+  
   ########################  
   ### Pronoun Analysis ###
   ########################
@@ -833,7 +939,7 @@ server <- function(input, output) {
   
   
   output$similarity_time <- renderPlot({
-    ggplot(similarity_df, aes(x = p1, y = p2, text = combination)) + 
+    ggplot(similarity_topics_df, aes(x = p1, y = p2, text = combination)) + 
       geom_point(size = 0.35, aes(color = `First Chart Appearance` ) )  + 
       xlab("Principal Component 1 Values") + 
       ylab("Principal Component 2 Values") + 
@@ -852,7 +958,7 @@ server <- function(input, output) {
   
   
   output$similarity_genre <- renderPlot({
-  df <- similarity_df[similarity_df$genre %in% input$genre_similarity_select , ]
+  df <- similarity_topics_df[similarity_topics_df$genre %in% input$genre_similarity_select , ]
   ggplot(df, aes(x = p1, y = p2, text = combination)) + 
     geom_point(size = 0.75, aes(color = genre)) + #  color = "steel blue") + 
     xlab("Principal Component 1 Values") + 
@@ -873,7 +979,7 @@ server <- function(input, output) {
   
     output$text_sim_2 <- renderText({"         "})    
     output$text_sim_3 <- renderText({" Consider the following sources:"})
-    output$text_sim_4 <- renderText({"Reimers, N., & Gurevych, I. (2019). Sentence-bert: Sentence embeddings using siamese bert-networks. arXiv preprint arXiv:1908.10084."})
+    output$text_sim_4 <- renderText({"HuggingFace (2020): BERT, URL: https://huggingface.co/docs/transformers/model_doc/bert."})
     output$text_sim_5 <- renderText({"HuggingFace (2021), Bert base NLI mean Tokens, URL:https://huggingface.co/sentence-transformers/bert-base-nli-mean-tokens "})
   })
   
@@ -882,13 +988,13 @@ server <- function(input, output) {
     
   
   output$songs <- renderText({
-    if (nrow(similarity_df[similarity_df$combination == input$similarity_string, ]) > 0) {
+    if (nrow(similarity_topics_df[similarity_topics_df$combination == input$similarity_string, ]) > 0) {
       text_out_1 <- "The threee most similar songs lyrics-wise are: 1) "
-      text_out_2 <- as.character(similarity_df$s1[similarity_df$combination == input$similarity_string] )
+      text_out_2 <- as.character(similarity_topics_df$s1[similarity_topics_df$combination == input$similarity_string] )
       text_out_3 <- ", 2) "
-      text_out_4 <- as.character(similarity_df$s2[similarity_df$combination == input$similarity_string] )
+      text_out_4 <- as.character(similarity_topics_df$s2[similarity_topics_df$combination == input$similarity_string] )
       text_out_5 <- " and 3) "
-      text_out_6 <- as.character(similarity_df$s3[similarity_df$combination == input$similarity_string] )
+      text_out_6 <- as.character(similarity_topics_df$s3[similarity_topics_df$combination == input$similarity_string] )
       text_out_7 <- "!"
       text_out <- paste0(text_out_1, text_out_2, text_out_3, text_out_4, text_out_5, text_out_6, text_out_7)
     } else {

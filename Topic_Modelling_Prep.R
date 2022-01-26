@@ -111,16 +111,14 @@ write.csv(topics_sent, "topics_sent.csv", row.names =  FALSE)
 
 ## to Server
 
-write.csv(df_topics_genre_year , "/srv/shiny-server/data_science_project/df_topics_genre_year.csv", row.names = FALSE)
-write.csv(df_topics_year , "/srv/shiny-server/data_science_project/df_topics_year.csv", row.names = FALSE)
-write.csv(prep_genre , "/srv/shiny-server/data_science_project/prep_genre.csv", row.names = FALSE)
-write.csv(co_occuring_df, "/srv/shiny-server/data_science_project/co_occuring_df.csv", row.names =  FALSE)
-write.csv(topics_sent, "/srv/shiny-server/data_science_project/topics_sent.csv", row.names =  FALSE)
+
+write.csv(df_topics_genre_year , "/srv/shiny-server/DS_Project/df_topics_genre_year.csv", row.names = FALSE)
+write.csv(df_topics_year , "/srv/shiny-server/DS_Project/df_topics_year.csv", row.names = FALSE)
+write.csv(prep_genre , "/srv/shiny-server/DS_Project/prep_genre.csv", row.names = FALSE)
+write.csv(co_occuring_df, "/srv/shiny-server/DS_Project/co_occuring_df.csv", row.names =  FALSE)
+write.csv(topics_sent, "/srv/shiny-server/DS_Project/topics_sent.csv", row.names =  FALSE)
 
 
-"/srv/shiny-server/data_science_project/
-
-###########
 
 rm(df_lyrics)
 rm(similarity_topics_df)

@@ -3,33 +3,6 @@
 #########################################################
 
 
-## use in ggplot 
-#scale_color_brewer(palette = "Blues") + 
-#theme(plot.title = element_text(size = 16, face = "bold", hjust = 0.5),   # evtl size = 14
-#      axis.title=element_text(size=14,face="bold")  ,
-#      axis.text=element_text(size= 13, face="bold"),
-#      plot.subtitle = element_text(size = 13, hjust = 0.5),
-#      legend.text = element_text(size=12), 
-#      legend.title = element_text(size=13 , face="bold",  hjust = 0.5))
-#)
-
-
-## wenn nur eine Farbe dann "steel blue"
-
-## use of following stop words and "Lautmalerien" possible
-onomopoetics <- c("ah","ooh","shimmy","uh","wah","oop","na","nah","bop","whoa","ya","mm","mmh","mmm","mmmh","o","oh","oo","ole","ola","hip","hipp","yo","jo","ee","eeh","da","dah","da-da","dada","ho","hoh","wo","woo", "uh", "du","da", "duh", "dah", "wow")
-
-## stopwords from base R
-#sw <- stop_words$word
-
-## functions ## 
-
-
-sentiment_mathing <- function(word) {
-  
-  out <- sentiments_afinn$value[sentiments_afinn$word == word]
-  return(out)
-}
 
 
 
@@ -75,9 +48,6 @@ library(lubridate)
 ## Einfach nehmnen des neusten "base_data_cleaned"
 
 df_lyrics <- readr::read_csv("base_data_cleaned.csv")
-# df_lyrics <- base_data_cleaned
-
-#glimpse(df_lyrics)
 
 
 ########################################
@@ -89,7 +59,7 @@ df_lyrics <- readr::read_csv("base_data_cleaned.csv")
 
 df_lengths_genres_dates_1 <- df_lyrics %>%
   filter(is.na(lyrics) == F) %>%
-  mutate(len = sapply(strsplit(lyrics, " "), length)) %>%   
+   mutate(len = sapply(strsplit(lyrics, " "), length)) %>%   
   filter(len <= 5000) %>%
   filter(len > 20) %>%
   mutate(lyrics = stri_encode(lyrics , "", "UTF-8")) %>%
@@ -115,11 +85,6 @@ sw <- stop_words$word
 ## getting adverbs 
 adverbs <- tidytext::nma_words$word[tidytext::nma_words$modifier == "adverb"]
 
-## sentiment indices 
-sentiments_afinn <- get_sentiments("afinn")
-
-sentiments_afinn_negative <- sentiments_afinn[sentiments_afinn$value <0, ]
-sentiments_afinn_positive <- sentiments_afinn[sentiments_afinn$value > 0, ]
 
 ## important now - > len refers to overall lyrics length while len1 refers to to reduced length!
 xx <- df_lengths_genres_dates_1[, c("lyrics", "combination", "tempo", "duration", "genre", "len", "danceability", "sent")]
@@ -137,17 +102,6 @@ for (i in 1:nrow(df_uniques)) {
   a <- strsplit(df_uniques$ly[i], " ")
   aa <- strsplit(df_uniques$ly2[i], " ")
   
-  b <- a[[1]][a[[1]] %in% sentiments_afinn$word] # for sentiment matching 
-  # positive words (length and most common ones)
-  pos <- b[b %in% sentiments_afinn_positive$word]
-  pos_list <- sort(pos[is.na(pos) == F], decreasing=T)[1]
-  df_uniques$pos_1[i] <- pos_list[1]
-  df_uniques$pos_len[i] <- length(pos)
-  # positive words (length and most common ones)
-  neg <- b[b %in% sentiments_afinn_negative$word]
-  neg_list <- sort(neg[is.na(neg) == F], decreasing=T)[1]
-  df_uniques$neg_1[i] <- neg_list[1]
-  df_uniques$neg_len[i] <- length(neg)
   # reduced length
   df_uniques$len1[i] <-  length(a[[1]][a[[1]]!= ""]) # reduced length general 
   df_uniques$len2[i] <- length(aa[[1]][aa[[1]]!= ""])  # length when only removing stopwords 
@@ -159,24 +113,15 @@ for (i in 1:nrow(df_uniques)) {
   
 }
 
-# positive to negative ratio
-df_uniques <- df_uniques %>%
-  mutate(pos_neg_ratio  =  (pos_len / (pos_len + neg_len))  )
-
-
 
 # getting number of onomatopoetics (relative to length)
 df_uniques <- df_uniques %>%
   mutate(rel_num_onomatos =  ((len2 - len1) / len) )
+    
 
-rm(pos)
-rm(neg)
-rm(pos_list)
-rm(neg_list)
+df_uniques <- df_uniques[, c("lyrics", "ly", "combination", "len", "len1", "duration", "tempo", "danceability", "genre", "compl", "compl_stem", "adverbs", "sent")]
+df_lengths_genres_dates_2_1 <- left_join(df_lengths_genres_dates_1[,  c("combination", "dates", "genre")], df_uniques[, c("combination", "len", "len1", "compl", "compl_stem", "duration", "tempo", "danceability", "adverbs", "sent")], by = "combination")
 
-
-df_uniques <- df_uniques[, c("lyrics", "ly", "combination", "len", "len1", "duration", "tempo", "danceability", "genre", "compl", "compl_stem", "adverbs", "sent", "pos_1", "pos_len", "neg_1", "neg_len", "pos_neg_ratio")]
-df_lengths_genres_dates_2_1 <- left_join(df_lengths_genres_dates_1[,  c("combination", "dates", "genre")], df_uniques[, c("combination", "len", "len1", "compl", "compl_stem", "duration", "tempo", "danceability", "adverbs", "sent", "pos_1", "pos_len", "neg_1", "neg_len", "pos_neg_ratio")], by = "combination")
 
 ## Sentiment Scores to Binary 
 tre_best <- -0.3
@@ -192,7 +137,7 @@ df_lengths_genres_dates  <- df_lengths_genres_dates_2_1 %>%
   mutate(compl = compl / len) %>% # depending on song length 
   mutate(compl_stem = compl_stem / len) %>% # depending on song length 
   mutate(adverbs_rel = adverbs / len) %>%
-  summarise(Mean_Song_Length =  ceiling(mean(len)), Mean_Red_Song_Length =  ceiling(mean(len1)), Mean_Tempo = mean(tempo, na.rm = T), Mean_Duration = mean(duration, na.rm = T),   Mean_Compl = mean(compl, na.rm = T),  Mean_Compl_Stem = mean(compl_stem, na.rm = T), Num_Adverbs = mean(adverbs, na.rm = T), Rel_Adverbs = mean(adverbs_rel, na.rm = T), Scores = mean(sent, na.rm = T), Scores_2  = mean(sent_2, na.rm = T),   Mean_Pos_Neg = mean(pos_neg_ratio, na.rm = T) ) %>%
+  summarise(Mean_Song_Length =  ceiling(mean(len)), Mean_Red_Song_Length =  ceiling(mean(len1)), Mean_Tempo = mean(tempo, na.rm = T), Mean_Duration = mean(duration, na.rm = T),   Mean_Compl = mean(compl, na.rm = T),  Mean_Compl_Stem = mean(compl_stem, na.rm = T), Num_Adverbs = mean(adverbs, na.rm = T), Rel_Adverbs = mean(adverbs_rel, na.rm = T), Scores = mean(sent, na.rm = T), Scores_2  = mean(sent_2, na.rm = T) ) %>%
   filter(genre != "unknown genre")
 df_lengths_genres_dates$Scores[is.nan(df_lengths_genres_dates$Scores) == T] <- 0
 
@@ -218,27 +163,15 @@ corr_table1 <- df_uniques %>%
   filter(genre!= "unknown genre") %>%
   mutate(Rel_Adverbs = (adverbs / len)*100) %>%
   group_by(genre) %>%
-  summarise(Corr1 = cor(tempo, len, use = "complete.obs"),  Corr2 = cor(duration, len, use = "complete.obs"), Rel_Adverbs = mean(Rel_Adverbs, na.rm = T), Mean_Pos_Neg = mean(pos_neg_ratio, na.rm = T), Corr_Sent_Tempo = cor(sent, tempo, use = "complete.obs"), Corr_Sent_Dance = cor(sent, danceability, use = "complete.obs") )
+  summarise(Corr1 = cor(tempo, len, use = "complete.obs"),  Corr2 = cor(duration, len, use = "complete.obs"), Rel_Adverbs = mean(Rel_Adverbs, na.rm = T), Corr_Sent_Tempo = cor(sent, tempo, use = "complete.obs"), Corr_Sent_Dance = cor(sent, danceability, use = "complete.obs") )
 
-names(corr_table1) <- c("Genre", "Correlation Lyrics Length & BPM", "Correlation Lyrics Length & Duration", "Percentage of adverbs", "Ratio of positive to negative words", "Correlation Sentiment & BPM", "Correlation Sentiment & Danceability")
-
-
-#############################
-## Positive/negative words ##
-#############################
-
-df_pos_words <- df_lengths_genres_dates_2_1 %>%
-  select(genre,dates,neg_1,pos_1) %>%
-  mutate(pos_1 = as.factor(pos_1)) %>%
-  mutate(neg_1 = as.factor(neg_1)) %>%
-  mutate(Date = as.Date(floor_date(dates, "year")))
+names(corr_table1) <- c("Genre", "Correlation Lyrics Length & BPM", "Correlation Lyrics Length & Duration", "Percentage of adverbs", "Correlation Sentiment & BPM", "Correlation Sentiment & Danceability")
 
 
 
 
 ### reducing DFs
-df_uniques <- df_uniques[, c("tempo", "duration", "len", "combination", "sent", "danceability", "pos_neg_ratio")]
-df_pos_words <- df_pos_words[, c("genre", "Date", "pos_1", "neg_1")]
+df_uniques <- df_uniques[, c("tempo", "duration", "len", "combination", "sent", "danceability")]
 
 #################
 ## Overview DF ##
@@ -303,6 +236,10 @@ Events <- c("1)  Vietnam War End (5/'75)", "2)  US Economic Crisis (01/'88-01/'8
 df_historical <- data.frame(Number, Date, Event, Events)
 
 
+
+
+
+
 ##### relevant DFs to be deleted or sent to shiny app 
 
 ## delete:
@@ -313,15 +250,17 @@ rm(df_seasonal_sent)
 
 ## sent to APP
 
-#df_over
-#df_lengths_genres_dates
-#length_duration
-#df_uniques
-#df_pos_words
-#corr_table1
-#df_seasonal_sent_month
-#df_seasonal_sent_season
+write.csv(df_over, "/srv/shiny-server/DS_Project/df_over.csv")
+write.csv(df_lengths_genres_dates, "/srv/shiny-server/DS_Project/df_lengths_genres_dates.csv")
+write.csv(length_duration , "/srv/shiny-server/DS_Project/length_duration.csv")
+write.csv(df_uniques , "/srv/shiny-server/DS_Project/df_uniques.csv")
+write.csv(df_pos_words , "/srv/shiny-server/DS_Project/df_pos_words.csv")
+write.csv(corr_table1 , "/srv/shiny-server/DS_Project/corr_table1.csv")
+write.csv(df_seasonal_sent_month , "/srv/shiny-server/DS_Project/df_seasonal_sent_month.csv")
+write.csv(df_seasonal_sent_season , "/srv/shiny-server/DS_Project/df_seasonal_sent_season.csv")
 
+
+print("all well executed")
 
 # for local storage - not for hosting app externally 
 
@@ -339,42 +278,18 @@ rm(df_seasonal_sent)
 
 
 ### From Leo: send to shiny App on server ###
-write.csv(df_over, "/srv/shiny-server/data_science_project/df_over.csv", row.names = FALSE)
-write.csv(df_lengths_genres_dates, "/srv/shiny-server/data_science_project/df_lengths_genres_dates.csv", row.names = FALSE)
-write.csv(length_duration, "/srv/shiny-server/data_science_project/length_duration.csv", row.names = FALSE)
-write.csv(df_uniques, "/srv/shiny-server/data_science_project/df_uniques.csv", row.names = FALSE)
-write.csv(df_pos_words, "/srv/shiny-server/data_science_project/df_pos_words.csv", row.names = FALSE)
-write.csv(corr_table1, "/srv/shiny-server/data_science_project/corr_table1.csv", row.names = FALSE)
-write.csv(df_seasonal_sent_month, "/srv/shiny-server/data_science_project/df_seasonal_sent_month.csv", row.names = FALSE)
-write.csv(df_seasonal_sent_season, "/srv/shiny-server/data_science_project/df_seasonal_sent_season.csv", row.names = FALSE)
-write.csv(df_sents_genre_year, "/srv/shiny-server/data_science_project/df_sents_genre_year.csv", row.names = FALSE)
-write.csv(df_sents_year, "/srv/shiny-server/data_science_project/df_sents_year.csv", row.names = FALSE)
-write.csv(df_historical, "/srv/shiny-server/data_science_project/df_historical.csv", row.names = FALSE)
+#write.csv(df_over, "/srv/shiny-server/data_science_project/df_over.csv", row.names = FALSE)
+#write.csv(df_lengths_genres_dates, "/srv/shiny-server/data_science_project/df_lengths_genres_dates.csv", row.names = FALSE)
+#write.csv(length_duration, "/srv/shiny-server/data_science_project/length_duration.csv", row.names = FALSE)
+#write.csv(df_uniques, "/srv/shiny-server/data_science_project/df_uniques.csv", row.names = FALSE)
+#write.csv(df_pos_words, "/srv/shiny-server/data_science_project/df_pos_words.csv", row.names = FALSE)
+#write.csv(corr_table1, "/srv/shiny-server/data_science_project/corr_table1.csv", row.names = FALSE)
+#write.csv(df_seasonal_sent_month, "/srv/shiny-server/data_science_project/df_seasonal_sent_month.csv", row.names = FALSE)
+#write.csv(df_seasonal_sent_season, "/srv/shiny-server/data_science_project/df_seasonal_sent_season.csv", row.names = FALSE)
+#write.csv(df_sents_genre_year, "/srv/shiny-server/data_science_project/df_sents_genre_year.csv", row.names = FALSE)
+#write.csv(df_sents_year, "/srv/shiny-server/data_science_project/df_sents_year.csv", row.names = FALSE)
+#write.csv(df_historical, "/srv/shiny-server/data_science_project/df_historical.csv", row.names = FALSE)
 
 
-
-
-
-############################
-
-# https://medium.com/@SAPCAI/text-clustering-with-r-an-introduction-for-data-scientists-c406e7454e76 # 
-
-corpus = tm::Corpus(tm::VectorSource(df_uniques$ly)) # or lyrics! 
-tdm <- tm::DocumentTermMatrix(corpus)
-
-tdm.tfidf <- tm::weightTfIdf(tdm)
-
-
-
-##
-
-tdm.tfidf <- tm::removeSparseTerms(tdm.tfidf, 0.999) 
-tfidf.matrix <- as.matrix(tdm.tfidf) 
-# Cosine distance matrix (useful for specific clustering algorithms) 
-dist.matrix = proxy::dist(tfidf.matrix, method = "cosine")
-
-
-clustering.kmeans <- kmeans(tfidf.matrix, truth.K)
-#clustering.dbscan <- dbscan::hdbscan(dist.matrix, minPts = 10)
 
 

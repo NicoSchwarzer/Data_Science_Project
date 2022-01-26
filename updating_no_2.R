@@ -1,295 +1,550 @@
-#########################################################
-## Introdcutory page & Length and complexity of lyrics ##
-#########################################################
+###############################
+## Weekly iterative updating ##
+###############################
 
 
-
-
-
-############################
-### Complexity of genres ###
-############################
-
-
-#setwd("C:/Users/Nico/Documents/Uni/3. Sem/DS Projekt/Code_and_Data")
-
+if (!require("jsonlite")) install.packages("jsonlite")
+if (!require("httr")) install.packages("httr")
+if (!require("rlist")) install.packages("rlist")
 if (!require("tidyverse")) install.packages("tidyverse")
-if (!require("tidytext")) install.packages("tidytext")
-if (!require("pryr")) install.packages("pryr")
-if (!require("plotly")) install.packages("plotly")
-if (!require("tm")) install.packages("tm")
-if (!require("shiny")) install.packages("shiny")
-if (!require("shinythemes")) install.packages("shinythemes")
-if (!require("SnowballC")) install.packages("SnowballC")
-if (!require("textdata")) install.packages("textdata")
-#if (!require("dbscan")) install.packages("dbscan")
-if (!require("stringi")) install.packages("stringi")
+if (!require("naniar")) install.packages("naniar")
+if (!require("foreach")) install.packages("foreach")
+if (!require('spotifyr')) install.packages('spotifyr')
+if (!require("rvest")) install.packages("rvest")
 if (!require("lubridate")) install.packages("lubridate")
+if (!require("deeplr")) install.packages("deeplr")
+if (!require("xgboost")) install.packages("xgboost")
+if (!require("stringi")) install.packages("stringi")
+if (!require("httr")) install.packages("httr")
+if (!require("jsonlite")) install.packages("jsonlite")
+if (!require("curl")) install.packages("curl")
 
 
-
-
+library(spotifyr)
+library(jsonlite)
+library(httr)
+library(rlist)
 library(tidyverse)
-library(tidytext)
-library(pryr)
+library(naniar)
+library(geniusr)
+library(foreach)
 library(lubridate)
-library(plotly)
-library(tm)
-library(shiny)
-library(shinythemes)
-library(SnowballC)
-library(textdata)
+library(rvest)
+library(xml2)
+library(rvest)
+library(stringr)
+library(deeplr)
+library(xgboost)
 library(stringi)
-library(lubridate)
+library(httr)
+library(jsonlite)
+library(curl)
+
+
+
+## This file is for the weekly updating the DF contain songs, artists, lyrics, genres and acoustic features 
+## It does so by the use of a repeat statement with a Sys.sleep() command at the end to run continuously but only
+## execute the updating weekly. Thus, this file HAS TO be run remotely!
+## The library commands, the meta-info and the functions thus only need to be run once (outside of repeat command)
+
+
+## The Set-Up of this file is as follows: ##
+
+# 1) Defining Meta-Data for Web Scraping and API Usage 
+# 2) Calling relevant functions to make subsequent steps more efficient and easier to read
+# 3)  Initialising the repeat loop 
+#  3.1) loading in dataframe with all genres and dataframe with reduced genres
+#   3.2) Getting last date from billboard site 
+#   3.3) Creating vector of all "missed dates", i.e. Saturdays of weeks that have not been added to thre overall charts DF.
+#   3.4) If the DF is not up to date 
+#     3.4.1) Scrape billboard site and retrieve artist and song info
+#     3.4.2) Getting genres for unseen songs via Spotify API (copying genres for seen songs)
+#     3.4.3) Getting acoustic features for unseen songs via Spotify API (copying features for seen songs)
+#     3.4.4) Getting lyrics for unseen songs via Genius API (copying lyrics for seen songs)
+#     3.4.5) Applying lyrics modelling 
+#     3.4.6) Append dataframe with original lyrics and dataframe with reduced lyrics 
+# 3.3) Letting the script sleep for one week
 
 
 
 
-## Einfach nehmnen des neusten "base_data_cleaned"
+################################
+## Meta-Info for Web Scraping ##
+################################
 
-df_lyrics <- readr::read_csv("base_data_cleaned.csv")
+base_url <- "https://www.billboard.com/charts/hot-100/"
 
+### Spotify API
 
-########################################
-## length of songs per genre and year w/ & wo/ stopwrods and oomatopoetics ##
-## Mean Tempo & Mean Duration // Unique words (before & after stemming ) ####
-## Adverbs & unique adverbs 
-########################################
+Sys.setenv(SPOTIFY_CLIENT_ID = "a9fc91d2beb445c5869d0ea04496f606")
+Sys.setenv(SPOTIFY_CLIENT_SECRET = "384c5bf72d3d4e85ac5b906258cadd9a")
+get_spotify_access_token()
 
+### Genius API
+# Nicos token
+Sys.setenv(GENIUS_API_TOKEN = "iZdkkCTGhwiZKyjrW6NjTaWhAML-6clc2yg2o77_BCn8CPcEyly423GM77Y3_KZk")
+genius_token()
 
-df_lengths_genres_dates_1 <- df_lyrics %>%
-  filter(is.na(lyrics) == F) %>%
-   mutate(len = sapply(strsplit(lyrics, " "), length)) %>%   
-  filter(len <= 5000) %>%
-  filter(len > 20) %>%
-  mutate(lyrics = stri_encode(lyrics , "", "UTF-8")) %>%
-  # removing non-alpha numeric characters 
-  mutate(lyrics = str_replace_all(lyrics, "[^[:alnum:]]", " ") ) %>%
-  select("dates", "genre", "len", "tempo", "duration", "combination", "lyrics", "danceability", "sent")
-
+# Leos token
+#Sys.setenv(GENIUS_API_TOKEN = "V0YxmAF_FAVWyTard84m4oAB5vhcyaIy7N-Uw24IGv8bcwH7chcgfpH-7FB7Mc5WL2uAeehKM8WgtNr9t_Sx0g")
+#genius_token()
 
 
-## onomopoetics dervied from 
-#common_words <- df_lyrics[nrow(df_lyrics)-1000:nrow(df_lyrics),] %>%
-#     unnest_tokens(output = "word", input = lyrics, token = "words") %>%
-#    count(word, sort = T) #%>%
-#common_words$word[1:1000]  
+### Last FM API
+
+fm_url <- "http://ws.audioscrobbler.com/2.0/?method=track.getInfo&api_key="
+api_key_last_fm <- "a2e1207d25ce4237d86ded2d073fabea"
+string_1 <- "&artist="
+string_2 <- "&track="
+string_3 <- "&format=json"
+
+## Audio DB API
+
+string_1a <- "http://www.theaudiodb.com/api/v1/json/523532/searchtrack.php?s="
+string_2a <- "&t="
 
 
-onomopoetics <- c("ah","ooh","shimmy","uh","wah","oop","na","nah","bop","whoa","ya","mm","mmh","mmm","mmmh","o","oh","oo","ole","ola","hip","hipp","yo","jo","ee","eeh","da","dah","da-da","dada","ho","hoh","wo","woo", "uh", "du","da", "duh", "dah", "wow", "yeah", "la")
+#############################
+## Load Relevant functions ##
+#############################
 
-## stopwords from base R
-sw <- stop_words$word
-
-
-## getting adverbs 
-adverbs <- tidytext::nma_words$word[tidytext::nma_words$modifier == "adverb"]
+source("functions_for_updating.R")
 
 
-## important now - > len refers to overall lyrics length while len1 refers to to reduced length!
-xx <- df_lengths_genres_dates_1[, c("lyrics", "combination", "tempo", "duration", "genre", "len", "danceability", "sent")]
-df_uniques <- distinct(xx)
-rm(xx)
+#############################
+### Read Data for Genres ####
+#############################
 
-# removing stopwords and onomatopoetics
-df_uniques <- df_uniques %>%
-  mutate(ly2 =  removeWords(lyrics,sw)) %>%
-  mutate(ly =  removeWords(ly2,onomopoetics)) 
+genres_mapping <- readxl::read_excel("unique_genres.xlsx")
+genres_mapping <- genres_mapping[,c("original_genre", "new_genre")]
 
 
-for (i in 1:nrow(df_uniques)) {
+
+
+###########################
+## Reading in overall DF ## 
+###########################
+
+# with original genres
+
+base_data_raw <- read.csv("base_data_raw.csv", stringsAsFactors=F)
+base_data_raw <- base_data_raw[, c("dates","chart_rank","songs","artists","lyrics","combination","artists_1" ,"artists_2","combination_1","combination_2","genre", "danceability" ,"energy","loadness","tempo","duration","sent")]
+
+# getting correct data types
+base_data_raw$dates <- as.Date(base_data_raw$dates)
+
+
+
+
+# with reduced genres
+base_data_cleaned <- read.csv("base_data_cleaned.csv", stringsAsFactors=F)
+base_data_cleaned <- base_data_cleaned[, c("dates","chart_rank","songs","artists","lyrics","combination","artists_1" ,"artists_2","combination_1","combination_2","genre", "danceability" ,"energy","loadness","tempo","duration", "sent")]
+
+# getting correct data types
+base_data_cleaned$dates <- as.Date(base_data_cleaned$dates)
+
+
+
+# most recent date from overall DF - here only the DF of the original genre is needed 
+last_date_all_df <- base_data_raw$dates[nrow(base_data_raw)]
+
+# getting last available online date
+last_date_on <- last_date_online(as.Date(Sys.time()))
+
+# get time difference of available date and online date
+difftime_general <- difftime(last_date_on, last_date_all_df, units = "days")
+
+if ( length(substr( difftime_general, start = 1, stop = 1)) == 2 ) {
+  difftime_cleaned <- strtoi(substr( difftime_general, start = 1, stop = 2))
+} else {
+  difftime_cleaned <- strtoi(substr( difftime_general, start = 1, stop = 2))
+}
+
+
+### only performing updating when difftime_cleaned > 50 
+
+
+if (difftime_cleaned > 0) {   ## start of large loop 
+
+##################################################################
+## Creating vector for all dates that are not yet in overall DF ##
+##################################################################
+
+vec_missed_dates <- c(last_date_all_df)     # vector of dates (Saturdays that need to be added) in right data format
+vec_missed_dates <- vec_missed_dates[-1]
+
+num_weeks_missed <- difftime_cleaned / 7
+
+# appending vec_missed_dates to include all sturdays for which there should be lyrics 
+
+for (i in 1:num_weeks_missed){
+  vec_missed_dates <- c(vec_missed_dates, (last_date_all_df + 7*i))
+}
   
-  a <- strsplit(df_uniques$ly[i], " ")
-  aa <- strsplit(df_uniques$ly2[i], " ")
+
+##################################################################
+########### Getting new songs by scraping Billboard ##############
+##################################################################
+
+# create empty data frame to store results
+df <- data.frame(matrix(nrow = 100*length(vec_missed_dates),
+                        ncol = 3))
+
+colnames(df) <- c("artists","songs", "dates")
+
+# specify column types
+df$artists <- as.character(df$artists)
+df$songs <- as.character(df$songs)
+df$dates <- as.Date(df$dates)
+
+# create indices for the loop
+a <- 1
+d <- 1 
+
+## loop through missed dates and scrape new songs
+for (i in 1:length(vec_missed_dates)) {
   
-  # reduced length
-  df_uniques$len1[i] <-  length(a[[1]][a[[1]]!= ""]) # reduced length general 
-  df_uniques$len2[i] <- length(aa[[1]][aa[[1]]!= ""])  # length when only removing stopwords 
-  ## unique words 
-  df_uniques$compl[i] <- length(unique(strsplit(df_uniques$lyrics[i], " ")[[1]]))
-  df_uniques$compl_stem[i] <- length(unique(wordStem(strsplit(df_uniques$lyrics[i], " ")[[1]], "english")))
-  ## adverbs 
-  df_uniques$adverbs[i] <- sum(strsplit(df_uniques$lyrics[i], " ")[[1]] %in% adverbs)
+  d_new <- new_data_df(base_url, vec_missed_dates[i])
+
+  df$artists[a:(a+99)] <- as.character(d_new$artists)
+  df$songs[a:(a+99)] <- as.character(d_new$songs)
+  df$dates[a:(a+99)] <- rep(vec_missed_dates[d], 100)
+  
+  a <- a + 100
+  d <- d + 1
+}
+
+## remove variables
+rm(a)
+rm(d)
+
+## adding charts placement 
+df$chart_rank <-  rep(c(1:100), length(vec_missed_dates))
+
+
+### Splitting artist and getting new combination ###
+df$combination <- paste0(df$artists,"  ", df$songs)   
+df <- getting_new_artists(df)
+
+# Coding variable of combination of artist and song title - also for the alternative representation of the artists
+df$combination_1 <- paste0(df$artists_1,"  ", df$songs)   
+df$combination_2 <- paste0(df$artists_2,"  ", df$songs)   
+
+
+
+#########################################################################
+## Dividing into new songs (not in all previous charts) and seen songs ##
+#########################################################################
+
+# combinations with A match in already scraped combinations
+df_all_new_data_billboard_seen <- df[(df$combination %in% base_data_cleaned$combination) ,]
+
+
+# combinations with NO match in already scraped combinations
+df_all_new_data_billboard_unseen <- df[!(df$combination %in% base_data_cleaned$combination) ,]
+
+
+df_all_new_data_billboard_unseen$artists <- as.character(df_all_new_data_billboard_unseen$artists)
+df_all_new_data_billboard_unseen$songs <- as.character(df_all_new_data_billboard_unseen$songs)
+
+
+
+##################################
+## Getting data for new songs ####
+##################################
+
+## getting the respective genres ## 
+
+
+## first trying per song genre with Audio DB API
+
+df_all_new_data_billboard_unseen$genre <- "c"
+max_iter <- nrow(df_all_new_data_billboard_unseen)
+
+
+for (i in 1:max_iter) {
+  
+  # getting correct genre  
+  df_all_new_data_billboard_unseen$genre[i] <- poss_audio_db_genre(df_all_new_data_billboard_unseen$artists[i], df_all_new_data_billboard_unseen$artists_1[i], df_all_new_data_billboard_unseen$artist_2[i], df_all_new_data_billboard_unseen$songs[i])
+
+  
+}  
+
+##secondly trying with Last FM API
+
+
+for (i in 1:max_iter) {
+  
+  if ( (df_all_new_data_billboard_unseen$genre[i] %in% genres_mapping$original_genre) == F) { 
+    
+    # getting correct genre  
+    df_all_new_data_billboard_unseen$genre[i] <- poss_fm_genre(df_all_new_data_billboard_unseen$artists[i], df_all_new_data_billboard_unseen$artists_1[i], df_all_new_data_billboard_unseen$artist_2[i], df_all_new_data_billboard_unseen$songs[i])
+                                                               
+    
+     
+  }
+  if (( i %% 100) == 0) {
+    Sys.sleep(40)
+  }  
+}
+
+
+
+##thirdly/lastly trying with Spotify API
+
+for (i in 1:max_iter) {
+  
+  if ( (df_all_new_data_billboard_unseen$genre[i] %in% genres_mapping$original_genre) == F) { 
+
+    # getting correct genre  
+  df_all_new_data_billboard_unseen$genre[i] <- get_genre_from_combination(df_all_new_data_billboard_unseen$combination[i], df_all_new_data_billboard_unseen$combination_1[i], df_all_new_data_billboard_unseen$combination_2[i], df_all_new_data_billboard_unseen$artists[i], df_all_new_data_billboard_unseen$artists_1[i], df_all_new_data_billboard_unseen$artists_2[i])
+  
+  }
+  if (( i %% 100) == 0) {
+    Sys.sleep(40)
+  }  
+}
+
+
+
+
+## getting the respective acoustic features ##  
+
+# defining new column with correct data type 
+df_all_new_data_billboard_unseen$danceability <- 0
+df_all_new_data_billboard_unseen$danceability <- 0
+df_all_new_data_billboard_unseen$energy <- 0
+df_all_new_data_billboard_unseen$loadness <- -1.2
+df_all_new_data_billboard_unseen$tempo <- 0
+df_all_new_data_billboard_unseen$duration <- 0
+
+
+# calling max_iter again since the nesting already removed NANs
+max_iter <- nrow(df_all_new_data_billboard_unseen)
+
+for (i in 1:max_iter) {
+  
+  # getting correct acoustic features
+  acoustic_features <- get_acoustic_features(df_all_new_data_billboard_unseen$combination[i], df_all_new_data_billboard_unseen$combination_1[i])
+  
+  # assigning fitting value of output vector 
+  df_all_new_data_billboard_unseen$danceability[i] <- acoustic_features[1]
+  df_all_new_data_billboard_unseen$energy[i] <- acoustic_features[2]
+  df_all_new_data_billboard_unseen$loadness[i] <- acoustic_features[3]
+  df_all_new_data_billboard_unseen$tempo[i] <- acoustic_features[4]
+  df_all_new_data_billboard_unseen$duration[i] <- acoustic_features[5]
+  
+  if (( i %% 200) == 0) {
+    Sys.sleep(25)
+  }  
   
 }
 
 
-# getting number of onomatopoetics (relative to length)
-df_uniques <- df_uniques %>%
-  mutate(rel_num_onomatos =  ((len2 - len1) / len) )
-    
-
-df_uniques <- df_uniques[, c("lyrics", "ly", "combination", "len", "len1", "duration", "tempo", "danceability", "genre", "compl", "compl_stem", "adverbs", "sent")]
-df_lengths_genres_dates_2_1 <- left_join(df_lengths_genres_dates_1[,  c("combination", "dates", "genre")], df_uniques[, c("combination", "len", "len1", "compl", "compl_stem", "duration", "tempo", "danceability", "adverbs", "sent")], by = "combination")
 
 
-## Sentiment Scores to Binary 
+######################################
+########### Getting Lyrics ###########
+######################################
+
+## add lyrics column
+df_all_new_data_billboard_unseen$lyrics <- as.character(NA) 
+
+for (i in 1:nrow(df_all_new_data_billboard_unseen)){
+  
+  # make artist vector
+  artist_vector <- get_strcombinations(df_all_new_data_billboard_unseen$artists[i])
+  
+  # make song vector
+  song_vector <- get_strcombinations(df_all_new_data_billboard_unseen$songs[i])
+  
+  # get lyrics
+  l <- get_lyrics(artist_vector = artist_vector,
+                  song_vector = song_vector,
+                  repeats = 5, print_comb = FALSE)
+  
+  
+  # fill in lyrics
+  df_all_new_data_billboard_unseen$lyrics[i] <- l
+  
+#  success <- sum(!is.na(df_all_new_data_billboard_unseen$lyrics))
+#  if(i%%10 == 0){
+#    print(paste0(i, "     Success Count: ", success))
+#  }
+  
+}
+
+
+########################################################
+########## Language Detection and Translation ########## 
+########################################################
+
+#### Language Detection of new songs
+
+## read in vocabulary and detection model
+vocab <- readr::read_csv("vocabulary_language_detection.csv")
+vocab <- as.vector(vocab$x)
+xgb_language_model <- xgboost::xgb.load("xgb_language_model.model")
+
+# initialize empty vector to store detected languages
+language <- character(length = nrow(df_all_new_data_billboard_unseen))
+
+# loop through new lyrics and detect language (sorry for loop, didnt try to vectorize the function :D)
+for (i in 1:nrow(df_all_new_data_billboard_unseen)){
+  # get language for every new song
+  language[i] <- detect_language(lyrics = df_all_new_data_billboard_unseen$lyrics[i],
+                                 vocab = vocab,
+                                 num_lang_identifier = num_lang_identifier,
+                                 model = xgb_language_model)
+}
+
+df_all_new_data_billboard_unseen$language <- language
+
+
+#### Translation for non-english songs
+
+## loop through the new songs and translate the non-english songs
+for (i in 1:nrow(df_all_new_data_billboard_unseen)){
+  
+  if (df_all_new_data_billboard_unseen$language[i] != "english"){
+    # need to check if deepl-key volumne still enough for the month :D
+    volume_left <- deeplr::usage2(deepl_key)$character_limit - deeplr::usage2(deepl_key)$character_count
+    char_count <- stringr::str_count(df_all_new_data_billboard_unseen$lyrics[i])
+    if (volume_left < char_count){
+      # break out of the loop if key not active any more
+      break
+    } else {
+      # otherwise translate
+      translation <- deeplr::translate2(
+        text = df_all_new_data_billboard_unseen$lyrics[i],
+        target_lang = "EN",
+        auth_key = deepl_key
+      )
+      
+      # replace lyrics by translation
+      df_all_new_data_billboard_unseen$lyrics[i] <- translation
+    }
+  }
+  
+}
+
+# drop language variable
+df_all_new_data_billboard_unseen <- df_all_new_data_billboard_unseen %>%
+  select(-language)
+
+# clean memory inbetween
+gc()
+
+
+########################
+## Getting Sentiments ##
+########################
+
+aw_best <- 1
+n_bef_best <- 6
+n_af_best <- 3 
 tre_best <- -0.3
-df_lengths_genres_dates_2_1$sent_2 <- 0 
-df_lengths_genres_dates_2_1$sent_2[df_lengths_genres_dates_2_1$sent > tre_best] <- 1 
+
+df_all_new_data_billboard_unseen$sent <- NA
+
+for (i in 1:nrow(df_all_new_data_billboard_unseen)) {
+  
+  
+  # overall length 
+  len_lyrics <- length(str_split(df_all_new_data_billboard_unseen$lyrics[i], " ")[[1]])
+  
+  if (is.na(len_lyrics) == F)  { # to ensure functionality
+    if ( len_lyrics < 5000) { # for reasons of computational burden
+      
+      
+      df_all_new_data_billboard_unseen$lyrics[i] <- stri_encode(df_all_new_data_billboard_unseen$lyrics[i] , "", "UTF-8")
+  
+  # getting sentences 
+  sent <- sentimentr::get_sentences(df_all_new_data_billboard_unseen$lyrics[i])
+  
+  # removing all non-alpha-numeric chars from string - per sentence! 
+  sent_rem <- str_replace_all(sent[1][[1]], "[^[:alnum:]]", " ")
+  pred   <- sentimentr::sentiment(sentimentr::get_sentences(sent_rem)    , amplifier.weight = aw_best, n.before = n_bef_best, n.after = n_af_best)
+  df_all_new_data_billboard_unseen$sent[i] <- mean(pred$sentiment)
+     
+    }
+  }
+}
+
+rm(aw_best)
+rm(n_bef_best)
+rm(n_af_best)
+rm(tre_best)
+         
 
 
-df_lengths_genres_dates  <- df_lengths_genres_dates_2_1 %>%
-  ### function for length of words 
-  mutate(dates = floor_date(dates, "year")) %>% ## function for aggregating at year level 
-  mutate(Date = dates) %>%
-  group_by(genre, Date) %>%
-  mutate(compl = compl / len) %>% # depending on song length 
-  mutate(compl_stem = compl_stem / len) %>% # depending on song length 
-  mutate(adverbs_rel = adverbs / len) %>%
-  summarise(Mean_Song_Length =  ceiling(mean(len)), Mean_Red_Song_Length =  ceiling(mean(len1)), Mean_Tempo = mean(tempo, na.rm = T), Mean_Duration = mean(duration, na.rm = T),   Mean_Compl = mean(compl, na.rm = T),  Mean_Compl_Stem = mean(compl_stem, na.rm = T), Num_Adverbs = mean(adverbs, na.rm = T), Rel_Adverbs = mean(adverbs_rel, na.rm = T), Scores = mean(sent, na.rm = T), Scores_2  = mean(sent_2, na.rm = T) ) %>%
-  filter(genre != "unknown genre")
-df_lengths_genres_dates$Scores[is.nan(df_lengths_genres_dates$Scores) == T] <- 0
+##############################
+## Taking care of seen data ## 
+##############################
 
 
+df_all_new_data_billboard_seen_2 <- dplyr::left_join(df_all_new_data_billboard_seen, dplyr::distinct(base_data_raw[, (!names(base_data_raw) %in% c('dates', 'chart_rank', 'artists', 'songs', 'artists_1', 'artists_2', 'combination_1', 'combination_2'))]), by = "combination")
+df_all_new_data_billboard_seen <- distinct(df_all_new_data_billboard_seen_2, combination, .keep_all = T)
 
-length_duration <-   df_lengths_genres_dates_2_1 %>%
-  ### function for length of words 
-  mutate(dates = floor_date(dates, "year")) %>% ## function for aggregating at year level 
-  mutate(Date = dates) %>%
-  group_by(Date) %>%
-  summarise(Mean_Tempo = mean(tempo, na.rm = T), Mean_Duration = mean(duration, na.rm = T) ) 
+rm(df_all_new_data_billboard_seen_2)
 
 
+###########################################################
+## Adding both seen and unseen data frames back together ##
+###########################################################  
 
-########################################
-## Development of length and duration ##
-########################################
-
-## correlations ## 
-
-
-corr_table1 <- df_uniques %>%
-  filter(genre!= "unknown genre") %>%
-  mutate(Rel_Adverbs = (adverbs / len)*100) %>%
-  group_by(genre) %>%
-  summarise(Corr1 = cor(tempo, len, use = "complete.obs"),  Corr2 = cor(duration, len, use = "complete.obs"), Rel_Adverbs = mean(Rel_Adverbs, na.rm = T), Corr_Sent_Tempo = cor(sent, tempo, use = "complete.obs"), Corr_Sent_Dance = cor(sent, danceability, use = "complete.obs") )
-
-names(corr_table1) <- c("Genre", "Correlation Lyrics Length & BPM", "Correlation Lyrics Length & Duration", "Percentage of adverbs", "Correlation Sentiment & BPM", "Correlation Sentiment & Danceability")
+df_new_with_features <- rbind(df_all_new_data_billboard_seen, df_all_new_data_billboard_unseen)
 
 
+rm(df_all_new_data_billboard_seen)
+rm(df_all_new_data_billboard_unseen)
+
+## Re-mapping the genres for the new DF
+df_new_with_features_reduced <- matching_genres(df_new_with_features)
 
 
-### reducing DFs
-df_uniques <- df_uniques[, c("tempo", "duration", "len", "combination", "sent", "danceability")]
+#########################
+## Adding to large DF  ##
+#########################
 
-#################
-## Overview DF ##
-#################
+### for DF with original genres ###
 
-df_over <- data.frame(  as.character(min(df_lyrics$dates)),  as.character(max(df_lyrics$dates)),  as.character(nrow(df_lyrics)) , as.character(nrow(  df_lyrics[is.na(df_lyrics$lyrics) == F,] )), as.character(nrow(df_uniques)) )
-names(df_over) <- c("First date", "Most recent date", "Number of songs scraped", "Songs with available lyrics", "Unique available songs")
-
-
-####################
-## Sentiment Data ##
-####################
-
-df_sents_genre_year  <-  df_lengths_genres_dates_1 %>%
-  ### function for length of words 
-  mutate(dates = floor_date(dates, "year")) %>% ## function for aggregating at year level 
-  mutate(Date = dates) %>%
-  group_by(genre, Date) %>%
-  summarise(Scores = mean(sent, na.rm = T) ) %>%
-  filter(genre != "unknown genre")
+# appending large DF
+base_data_raw <- dplyr::bind_rows(base_data_raw, df_new_with_features)
 
 
-df_sents_year  <- df_lengths_genres_dates_1 %>%
-  ### function for length of words 
-  mutate(dates = floor_date(dates, "month")) %>% ## function for aggregating at year level 
-  mutate(Date = dates) %>%
-  group_by(Date) %>%
-  summarise(Scores = mean(sent, na.rm = T) )
+# appending DF with reduced genres 
+base_data_cleaned <- dplyr::bind_rows(base_data_cleaned, df_new_with_features_reduced)
 
 
 
-
-## seasonal sentiments ##
-
-df_seasonal_sent <- df_lengths_genres_dates_2_1 %>%
-  mutate(dates = as.character(floor_date(dates, "month"))) %>%
-  select(c(combination, dates, sent)) %>%
-  mutate(Month = substr(dates,6,7))
-df_seasonal_sent$Season[df_seasonal_sent$Month %in% c("12","01","02")] <- "Winter"
-df_seasonal_sent$Season[df_seasonal_sent$Month %in% c("03","04","05")] <- "Spring"
-df_seasonal_sent$Season[df_seasonal_sent$Month %in% c("06","07","08")] <- "Summer"
-df_seasonal_sent$Season[df_seasonal_sent$Month %in% c("09","10","11")] <- "Autumn"
-
-df_seasonal_sent_month <- df_seasonal_sent %>%
-  group_by(Month) %>%
-  summarise(x = mean(sent, na.rm = T))
-
-df_seasonal_sent_season <- df_seasonal_sent %>%
-  group_by(Season) %>%
-  summarise(x = mean(sent, na.rm = T))
+rm(df_new_with_features)
+rm(df_new_with_features_reduced)
 
 
-###############################
-## DF with historical events ##
-###############################
+## saving results ##
 
-Number <- c(1,2,3,4,5,6,7) # 8
-Date <- c('May 1975', 'Jan. 1981 - Jan. 1983', 'July 1988 - Dec. 1991', 'Sep. 2001', 'March 2003', 'Aug. 2007', 'March 2020')  # , 'Sep. 2021'
-Event <- c('End of Vietnam War', 'US Economic Crisis', 'Dissolution of the Soviet Union', '9/11', 'Start of second Iraq War', 'Financial Crisis', 'First Wave of Covid Pandemic') # , 'Second Wave of Covid Pandemic'
-Events <- c("1)  Vietnam War End (5/'75)", "2)  US Economic Crisis (01/'88-01/'83)", "3) End of Soviet Union (07/'88-12/'91)", "4)  9/11 (09/'01)", "5)  Start Iraq War (03/'03)", "6)  Financial Crisis (08/'07-04/'09)", "7)  First Covid Wave (03/'20)")
+write.csv(base_data_raw, "base_data_raw.csv",
+          row.names = FALSE)
 
-df_historical <- data.frame(Number, Date, Event, Events)
+write.csv(base_data_cleaned, "base_data_cleaned.csv",
+          row.names = FALSE)
+
+
+
+## removing 
+
+
+
+## sourcing 
+
+
+source("pronoun_analysis_for_update.R")  ## check with dataset names again
+
+source("IntroPage_Complexity_Sentiment_Analyis.R")
 
 
 
 
-
-
-##### relevant DFs to be deleted or sent to shiny app 
-
-## delete:
-rm(df_lyrics)
-rm(df_lengths_genres_dates_1)
-rm(df_lengths_genres_dates_2_1)
-rm(df_seasonal_sent)
-
-## sent to APP
-
-write.csv(df_over, "/srv/shiny-server/DS_Project/df_over.csv")
-write.csv(df_lengths_genres_dates, "/srv/shiny-server/DS_Project/df_lengths_genres_dates.csv")
-write.csv(length_duration , "/srv/shiny-server/DS_Project/length_duration.csv")
-write.csv(df_uniques , "/srv/shiny-server/DS_Project/df_uniques.csv")
-write.csv(df_pos_words , "/srv/shiny-server/DS_Project/df_pos_words.csv")
-write.csv(corr_table1 , "/srv/shiny-server/DS_Project/corr_table1.csv")
-write.csv(df_seasonal_sent_month , "/srv/shiny-server/DS_Project/df_seasonal_sent_month.csv")
-write.csv(df_seasonal_sent_season , "/srv/shiny-server/DS_Project/df_seasonal_sent_season.csv")
-
-
-print("all well executed")
-
-# for local storage - not for hosting app externally 
-
-#write.csv(df_over, "df_over.csv", row.names = FALSE)
-#write.csv(df_lengths_genres_dates, "df_lengths_genres_dates.csv", row.names = FALSE)
-#write.csv(length_duration, "length_duration.csv", row.names = FALSE)
-#write.csv(df_uniques, "df_uniques.csv", row.names = FALSE)
-#write.csv(df_pos_words, "df_pos_words.csv", row.names = FALSE)
-#write.csv(corr_table1, "corr_table1.csv", row.names = FALSE)
-#write.csv(df_seasonal_sent_month, "df_seasonal_sent_month.csv", row.names = FALSE)
-#write.csv(df_seasonal_sent_season, "df_seasonal_sent_season.csv", row.names = FALSE)
-#write.csv(df_sents_genre_year, "df_sents_genre_year.csv", row.names = FALSE)
-#write.csv(df_sents_year, "df_sents_year.csv", row.names = FALSE)
-#write.csv(df_historical, "df_historical.csv", row.names = FALSE)
-
-
-### From Leo: send to shiny App on server ###
-#write.csv(df_over, "/srv/shiny-server/data_science_project/df_over.csv", row.names = FALSE)
-#write.csv(df_lengths_genres_dates, "/srv/shiny-server/data_science_project/df_lengths_genres_dates.csv", row.names = FALSE)
-#write.csv(length_duration, "/srv/shiny-server/data_science_project/length_duration.csv", row.names = FALSE)
-#write.csv(df_uniques, "/srv/shiny-server/data_science_project/df_uniques.csv", row.names = FALSE)
-#write.csv(df_pos_words, "/srv/shiny-server/data_science_project/df_pos_words.csv", row.names = FALSE)
-#write.csv(corr_table1, "/srv/shiny-server/data_science_project/corr_table1.csv", row.names = FALSE)
-#write.csv(df_seasonal_sent_month, "/srv/shiny-server/data_science_project/df_seasonal_sent_month.csv", row.names = FALSE)
-#write.csv(df_seasonal_sent_season, "/srv/shiny-server/data_science_project/df_seasonal_sent_season.csv", row.names = FALSE)
-#write.csv(df_sents_genre_year, "/srv/shiny-server/data_science_project/df_sents_genre_year.csv", row.names = FALSE)
-#write.csv(df_sents_year, "/srv/shiny-server/data_science_project/df_sents_year.csv", row.names = FALSE)
-#write.csv(df_historical, "/srv/shiny-server/data_science_project/df_historical.csv", row.names = FALSE)
-
-
-
-
+} ## end of large loop that ensures that updating is only done when 
+## new data is present!

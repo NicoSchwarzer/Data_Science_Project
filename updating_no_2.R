@@ -18,6 +18,8 @@ if (!require("stringi")) install.packages("stringi")
 if (!require("httr")) install.packages("httr")
 if (!require("jsonlite")) install.packages("jsonlite")
 if (!require("curl")) install.packages("curl")
+if(!require("writexl")) install.packages("writexl")
+
 
 
 library(spotifyr)
@@ -39,6 +41,8 @@ library(stringi)
 library(httr)
 library(jsonlite)
 library(curl)
+library(writexl)
+
 
 
 
@@ -88,6 +92,7 @@ genius_token()
 # Leos token
 #Sys.setenv(GENIUS_API_TOKEN = "V0YxmAF_FAVWyTard84m4oAB5vhcyaIy7N-Uw24IGv8bcwH7chcgfpH-7FB7Mc5WL2uAeehKM8WgtNr9t_Sx0g")
 #genius_token()
+
 
 
 ### Last FM API
@@ -243,10 +248,8 @@ df_all_new_data_billboard_seen <- df[(df$combination %in% base_data_cleaned$comb
 # combinations with NO match in already scraped combinations
 df_all_new_data_billboard_unseen <- df[!(df$combination %in% base_data_cleaned$combination) ,]
 
-
 df_all_new_data_billboard_unseen$artists <- as.character(df_all_new_data_billboard_unseen$artists)
 df_all_new_data_billboard_unseen$songs <- as.character(df_all_new_data_billboard_unseen$songs)
-
 
 
 ##################################
@@ -307,7 +310,6 @@ for (i in 1:max_iter) {
 
 
 
-
 ## getting the respective acoustic features ##  
 
 # defining new column with correct data type 
@@ -342,7 +344,6 @@ for (i in 1:max_iter) {
 
 
 
-
 ######################################
 ########### Getting Lyrics ###########
 ######################################
@@ -359,7 +360,7 @@ for (i in 1:nrow(df_all_new_data_billboard_unseen)){
   song_vector <- get_strcombinations(df_all_new_data_billboard_unseen$songs[i])
   
   # get lyrics
-  l <- get_lyrics(artist_vector = artist_vector,
+  l <-  get_lyrics_alt(artist_vector = artist_vector,
                   song_vector = song_vector,
                   repeats = 5, print_comb = FALSE)
   

@@ -44,7 +44,6 @@ library(lubridate)
 
 
 
-
 ## Einfach nehmnen des neusten "base_data_cleaned"
 
 df_lyrics <- readr::read_csv("base_data_cleaned.csv")
@@ -250,31 +249,30 @@ rm(df_seasonal_sent)
 
 ## sent to APP
 
-write.csv(df_over, "/srv/shiny-server/DS_Project/df_over.csv")
-write.csv(df_lengths_genres_dates, "/srv/shiny-server/DS_Project/df_lengths_genres_dates.csv")
-write.csv(length_duration , "/srv/shiny-server/DS_Project/length_duration.csv")
-write.csv(df_uniques , "/srv/shiny-server/DS_Project/df_uniques.csv")
-write.csv(df_pos_words , "/srv/shiny-server/DS_Project/df_pos_words.csv")
-write.csv(corr_table1 , "/srv/shiny-server/DS_Project/corr_table1.csv")
-write.csv(df_seasonal_sent_month , "/srv/shiny-server/DS_Project/df_seasonal_sent_month.csv")
-write.csv(df_seasonal_sent_season , "/srv/shiny-server/DS_Project/df_seasonal_sent_season.csv")
+write.csv(df_over, "/srv/shiny-server/DS_Project/df_over.csv", row.names = FALSE)
+write.csv(df_lengths_genres_dates, "/srv/shiny-server/DS_Project/df_lengths_genres_dates.csv", row.names = FALSE)
+write.csv(length_duration , "/srv/shiny-server/DS_Project/length_duration.csv", row.names = FALSE)
+write.csv(df_uniques , "/srv/shiny-server/DS_Project/df_uniques.csv", row.names = FALSE)
+#write.csv(df_pos_words , "/srv/shiny-server/DS_Project/df_pos_words.csv", row.names = FALSE)
+write.csv(corr_table1 , "/srv/shiny-server/DS_Project/corr_table1.csv", row.names = FALSE)
+write.csv(df_seasonal_sent_month , "/srv/shiny-server/DS_Project/df_seasonal_sent_month.csv", row.names = FALSE)
+write.csv(df_seasonal_sent_season , "/srv/shiny-server/DS_Project/df_seasonal_sent_season.csv", row.names = FALSE)
 
 
-print("all well executed")
 
 # for local storage - not for hosting app externally 
 
-#write.csv(df_over, "df_over.csv", row.names = FALSE)
-#write.csv(df_lengths_genres_dates, "df_lengths_genres_dates.csv", row.names = FALSE)
-#write.csv(length_duration, "length_duration.csv", row.names = FALSE)
-#write.csv(df_uniques, "df_uniques.csv", row.names = FALSE)
+write.csv(df_over, "df_over.csv", row.names = FALSE)
+write.csv(df_lengths_genres_dates, "df_lengths_genres_dates.csv", row.names = FALSE)
+write.csv(length_duration, "length_duration.csv", row.names = FALSE)
+write.csv(df_uniques, "df_uniques.csv", row.names = FALSE)
 #write.csv(df_pos_words, "df_pos_words.csv", row.names = FALSE)
-#write.csv(corr_table1, "corr_table1.csv", row.names = FALSE)
-#write.csv(df_seasonal_sent_month, "df_seasonal_sent_month.csv", row.names = FALSE)
-#write.csv(df_seasonal_sent_season, "df_seasonal_sent_season.csv", row.names = FALSE)
-#write.csv(df_sents_genre_year, "df_sents_genre_year.csv", row.names = FALSE)
-#write.csv(df_sents_year, "df_sents_year.csv", row.names = FALSE)
-#write.csv(df_historical, "df_historical.csv", row.names = FALSE)
+write.csv(corr_table1, "corr_table1.csv", row.names = FALSE)
+write.csv(df_seasonal_sent_month, "df_seasonal_sent_month.csv", row.names = FALSE)
+write.csv(df_seasonal_sent_season, "df_seasonal_sent_season.csv", row.names = FALSE)
+write.csv(df_sents_genre_year, "df_sents_genre_year.csv", row.names = FALSE)
+write.csv(df_sents_year, "df_sents_year.csv", row.names = FALSE)
+write.csv(df_historical, "df_historical.csv", row.names = FALSE)
 
 
 ### From Leo: send to shiny App on server ###
@@ -292,4 +290,5 @@ print("all well executed")
 
 
 
+print("all well executed")
 

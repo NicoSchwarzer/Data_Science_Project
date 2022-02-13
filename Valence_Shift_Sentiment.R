@@ -37,6 +37,9 @@ moody_df <- read_csv("moody_df_lyrics.csv")
 
 glimpse(moody_df)
 
+ind <- sample(c(TRUE, FALSE), nrow(moody_df), replace=TRUE, prob=c(0.7, 0.3))
+moody_df_train <- moody_df[ind, ]
+moody_df_val <- moody_df[!ind, ]
 
 
 ##############
@@ -82,14 +85,14 @@ for (a in amplifier_weights) {
 
     
       
-      for (i in 1:nrow(moody_df)) {
+      for (i in 1:nrow(moody_df_train)) {
      # getting mood predictions
       
       # encoding  
-        moody_dflyrics[i] <- stri_encode(moody_df$lyrics[i] , "", "UTF-8")
+        moody_df_train$lyrics[i] <- stri_encode(moody_df_train$lyrics[i] , "", "UTF-8")
         
       # getting sentences 
-      sent <- sentimentr::get_sentences(moody_df$lyrics[i])
+      sent <- sentimentr::get_sentences(moody_df_train$lyrics[i])
         
       # removing all non-alpha-numeric chars from string - per sentence! 
       sent_rem <- str_replace_all(sent[1][[1]], "[^[:alnum:]]", " ")
@@ -103,17 +106,17 @@ for (a in amplifier_weights) {
         print(paste0("Following combination : Amplifier weight is ", as.character(a), " n before is ", as.character(n), " n after is ", as.character(na), ". Treshold for assignment to positive is ", as.character(t), "."))
         
         # mapping to binaries
-        moody_df$mood_pred2 <- "pos"
-        moody_df$mood_pred2[xx$mood_pred < t  ] <- "neg"
+        moody_df_train$mood_pred2 <- "pos"
+        moody_df_train$mood_pred2[moody_df_train$mood_pred < t  ] <- "neg"
         
         # getting f1 score
-        moody_df$mood_pred2 <- as.factor(moody_df$mood_pred2)
-        moody_df$mood <- as.factor(moody_df$mood)
+        moody_df_train$mood_pred2 <- as.factor(moody_df_train$mood_pred2)
+        moody_df_train$mood <- as.factor(moody_df_train$mood)
         
         # account for case that all "pos"/"neg" are returned
-        if (nrow(moody_df[moody_df$mood_pred2 == "pos",])  != 0) {
-          if (nrow(moody_df[moody_df$mood_pred2 == "neg",])  != 0) {
-          con_matrix <- caret::confusionMatrix(moody_df$mood, moody_df$mood_pred2)
+        if (nrow(moody_df_train[moody_df_train$mood_pred2 == "pos",])  != 0) {
+          if (nrow(moody_df_train[moody_df_train$mood_pred2 == "neg",])  != 0) {
+          con_matrix <- caret::confusionMatrix(moody_df_train$mood, moody_df_train$mood_pred2)
           precision <- con_matrix$table[2,2] /  ( con_matrix$table[2,1] + con_matrix$table[2,2] )
           recall <-  con_matrix$table[2,2] / ( con_matrix$table[1,2] +  con_matrix$table[2,2] )
           f1_here <- 2 * (precision * recall) / (precision + recall)
@@ -133,11 +136,7 @@ for (a in amplifier_weights) {
 }
 
 
-
-
 ## Getting the best hyperparameters
-
-## Importantly, since no actual training of the algorithms is done (no weight optimization), there is no need for splitting into a test and train set!
 
 index_best_f1 <- which.max(f1)   
 aw_best <- a_w[index_best_f1]
@@ -148,11 +147,54 @@ tre_best <- tre[index_best_f1]
 print(paste0("Best Amplifier weight is: ", as.character(aw_best), " best n before is ", as.character(n_bef_best), " best n after is ", as.character(n_af_best), " best treshold is ", as.character(tre_best) ))
 
 
-## f1 of 0.91 !!!
+
 #aw_best <- 1
 #n_bef_best <- 6
 #n_af_best <- 3 
 #tre_best <- -0.3
+
+
+## testing on val set ##
+
+
+## prediciting 
+
+for (i in 1:nrow(moody_df_val)) {
+  # getting mood predictions
+  
+  # encoding  
+  moody_df_val$lyrics[i] <- stri_encode(moody_df_val$lyrics[i] , "", "UTF-8")
+  
+  # getting sentences 
+  sent <- sentimentr::get_sentences(moody_df_val$lyrics[i])
+  
+  # removing all non-alpha-numeric chars from string - per sentence! 
+  sent_rem <- str_replace_all(sent[1][[1]], "[^[:alnum:]]", " ")
+  pred   <- sentimentr::sentiment(sentimentr::get_sentences(sent_rem), amplifier.weight = a, n.before = n, n.after = na)
+  moody_df$mood_pred[i] <- mean(pred$sentiment)
+}
+
+
+## evaluating
+moody_df_val$mood_pred2 <- "pos"
+moody_df_val$mood_pred2[moody_df_val$mood_pred < t  ] <- "neg"
+  
+# getting f1 score
+moody_df_val$mood_pred2 <- as.factor(moody_df_val$mood_pred2)
+moody_df_val$mood <- as.factor(moody_df_val$mood)
+  
+
+con_matrix <- caret::confusionMatrix(moody_df_train$mood, moody_df_train$mood_pred2)
+precision <- con_matrix$table[2,2] /  ( con_matrix$table[2,1] + con_matrix$table[2,2] )
+recall <-  con_matrix$table[2,2] / ( con_matrix$table[1,2] +  con_matrix$table[2,2] )
+f1_here <- 2 * (precision * recall) / (precision + recall)
+      
+
+
+print(paste0("The f1 Score with optimal HyperParametrs on the Val set is ", str(f1_here), "!"))
+
+## f1 of 0.89 ( !!!! )
+
 
 
 ####################################

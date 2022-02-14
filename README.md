@@ -1,5 +1,16 @@
 # Data_Science_Project
 
+## Mögliche Kategorisierung:
+
+
+1) Functionen zum sourcen, Übersichten etc.
+2) Datenbeschaffung
+2) a) statisch 
+2) b) dynamisch, updating
+3) Analyse/ML files (inkl. vorbereitung dafür)
+4) Vorbereitung für Shiny App (files, die zu finale Datensätze an Shiny App senden)
+5) Shiny App (Server, ui, global)
+
 
 ### To Do:
 - In NER einlesen, Fokus: Themen aus Songs extrahieren      -> Leo

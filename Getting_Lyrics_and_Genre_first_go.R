@@ -2,6 +2,12 @@
 ## Getting Lyrics and Genre  first go  ##
 #########################################
 
+## Note that this file is old. 
+# The use of the LastFM and AudioDB APIs for the Genres was applied later and resides in th files
+# LastFM_Genres.R and AudioDB_Genres.R
+# Also, the lyrics function is old. The approach that leads to our DF resides
+# in get_lyrics.R!
+
 
 ## please make sure that the file all_data_billboard_weeks.csv resides here!
 
@@ -472,7 +478,7 @@ df_all_billboard_all_weeks_with_genre_lyrics <- df_all_billboard_all_weeks_with_
 
 ## unique songs (no nans)
 
-write.csv(df_all_billboard_weeks_unique_with_genre_lyrics_no_na,"df_all_billboard_weeks_unique_with_genre_lyrics_no_na.csv")
+#write.csv(df_all_billboard_weeks_unique_with_genre_lyrics_no_na,"df_all_billboard_weeks_unique_with_genre_lyrics_no_na.csv")
 # 10987 uniques 
 
 
@@ -481,14 +487,14 @@ write.csv(df_all_billboard_weeks_unique_with_genre_lyrics_no_na,"df_all_billboar
 # the DF shall be saved as "df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED" to indicate that NO cleaning has been done until now 
 
 
-write.csv(df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED,"df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED.csv")
+write.csv(df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED, "base_data_raw.csv")
 
 
 ## applying the genre mapping and saving 
 
 df_all_billboard_all_weeks_with_reduced_genre_lyrics_NOT_CLEANED <- matching_genres(df_all_billboard_all_weeks_with_genre_lyrics_NOT_CLEANED)
 
-write.csv(df_all_billboard_all_weeks_with_reduced_genre_lyrics_NOT_CLEANED,"df_all_billboard_all_weeks_with_reduced_genre_lyrics_NOT_CLEANED.csv")
+write.csv(df_all_billboard_all_weeks_with_reduced_genre_lyrics_NOT_CLEANED,"base_data_cleaned.csv")
 
 
 

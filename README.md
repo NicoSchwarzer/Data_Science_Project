@@ -29,6 +29,7 @@ Again, consider that no hierarchical folder structure is needed when using the c
 Should you be interested in more information or in the data used (especially that used for the App), feel free to contact us.
 
 leonard.berger@student.uni-tuebingen.de 
+
 nico.schwarzer@student.uni-tuebingen.de 
 
 

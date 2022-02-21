@@ -12,7 +12,7 @@ All files used for the project are to be found in this Repository. To introduce 
 1) Functions to be sourced 
 3) Data Acquisition
  a) static (until November 2021)
- b) dynamisch (continuous updating)
+ b) dynamic (continuous updating)
 3) Analysis and Machine Learning (including preparatory files)
 4) Preparation for the Shiny App (files constructing the data that is directly used in the App)
 5) Shiny App Files (Server, ui, global)

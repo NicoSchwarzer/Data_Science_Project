@@ -22,9 +22,9 @@ Also note that when coding the Project, all files and data were saved in one fol
 
 ## Information on Re-Coding
 
-With the help of the files above and the corresponding data, it is principally to re-code almost (all) steps (with the exception of those relying on deprecated methods). The datasets we used are vast and therefore not present here - contact us for a link to a Dropbox!
+With the help of the files above and the corresponding data, it is principally possible to re-code almost (all) steps (with the exception of those relying on deprecated methods). The datasets we used are vast and therefore not present here - contact us for a link to a Dropbox!
 
-However, as some many steps need not be repeated for obtaining the final results (such as e.g. the Acquisition of the Historical Data or Model Training) and would take multiple days and sometimes rely on deprecated methods, we highly recommend to simply save the files in the 'Shiny App Files' folder together with the correspnding data and then run the App - this should work easily!
+However, as most steps need not be repeated for obtaining the final results (such as e.g. the Acquisition of the Historical Data or Model Training) and would take multiple days and sometimes rely on deprecated methods, we highly recommend to simply save the files in the 'Shiny App Files' folder together with the corresponding data and then run the App - this should work easily!
 
 Again, consider that no hierarchical folder structure is needed when using the code on your machine. 
 

@@ -1,5 +1,0 @@
-packages installed on machine:
-shiny
-dplyr
-ggplot2
-shinythemes

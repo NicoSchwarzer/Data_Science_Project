@@ -151,13 +151,13 @@ schatzinsel_txt <- paste0(schatzinsel_de$text, collapse = " ")
 
 ## tokenize words and word stems and unlist
 faust_stems <- tok_stems(faust_txt, stems = FALSE)
-faust_stems$words <- stringr::str_replace_all(faust_stems$words, "ä", "ae")
-faust_stems$words <- stringr::str_replace_all(faust_stems$words, "ü", "ue")
-faust_stems$words <- stringr::str_replace_all(faust_stems$words, "ö", "oe")
+faust_stems$words <- stringr::str_replace_all(faust_stems$words, "Ã¤", "ae")
+faust_stems$words <- stringr::str_replace_all(faust_stems$words, "Ã¼", "ue")
+faust_stems$words <- stringr::str_replace_all(faust_stems$words, "Ã¶", "oe")
 schatzinsel_stems <- tok_stems(schatzinsel_txt, stems = FALSE)
-schatzinsel_stems$words <- stringr::str_replace_all(schatzinsel_stems$words, "ä", "ae")
-schatzinsel_stems$words <- stringr::str_replace_all(schatzinsel_stems$words, "ü", "ue")
-schatzinsel_stems$words <- stringr::str_replace_all(schatzinsel_stems$words, "ö", "oe")
+schatzinsel_stems$words <- stringr::str_replace_all(schatzinsel_stems$words, "Ã¤", "ae")
+schatzinsel_stems$words <- stringr::str_replace_all(schatzinsel_stems$words, "Ã¼", "ue")
+schatzinsel_stems$words <- stringr::str_replace_all(schatzinsel_stems$words, "Ã¶", "oe")
 
 ## combine all books and make vocabulary
 german_vocab <- count_filter(list(faust_stems, schatzinsel_stems),

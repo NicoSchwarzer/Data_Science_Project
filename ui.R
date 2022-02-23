@@ -1,12 +1,7 @@
 
 #######################################################################
 
-###### DIESES UI FILE LAEUFT GERADE IN DER WEB-APP
-
-###### STAND 03.02.2022 15:00
-
-###### AENDERUNGEN NACH DEM AKTUELLSTEN STAND DIE NUR IN DER INSTANZ
-###### VORGENOMMEN WURDEN BITTE MARKIEREN/NOTIEREN
+###### UI FILE
 
 #######################################################################
 

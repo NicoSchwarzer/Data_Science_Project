@@ -13,7 +13,7 @@ All files used for the project are to be found in this Repository. To introduce 
 3) Data Acquisition
  a) static (until November 2021)
  b) dynamic (continuous updating)
-3) Analysis and Machine Learning (including preparatory files)
+3) Analysis and Machine Learning (including preparatory files) a) static b)dynamic
 4) Preparation for the Shiny App (files constructing the data that is directly used in the App)
 5) Shiny App Files (Server, ui, global)
 

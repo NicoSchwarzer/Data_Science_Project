@@ -238,7 +238,7 @@ get_info_tibble <- function(songs) {
 
 
 #  one without lyrics, one with no genre
-songs_1 <- c("Ludwig van Beethoven Für Elise",  "Alesso Years", "The Killers Mr. Brightside", "Kygo Born to be yours", "Eros Ramazotti Piu Bella Cosa", "Kenning West Alder", "Cher Believe",  "Avicii Levels", "Billie Eilish No Time to Die",  "Luis Fonsi Despacito", "Alan Walker Faded", "Farruko  Pepas", "Nelly Furtado  Maneater")
+songs_1 <- c("Ludwig van Beethoven FÃ¼r Elise",  "Alesso Years", "The Killers Mr. Brightside", "Kygo Born to be yours", "Eros Ramazotti Piu Bella Cosa", "Kenning West Alder", "Cher Believe",  "Avicii Levels", "Billie Eilish No Time to Die",  "Luis Fonsi Despacito", "Alan Walker Faded", "Farruko  Pepas", "Nelly Furtado  Maneater")
 
 so <- "Alesso Years"
 

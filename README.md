@@ -29,8 +29,10 @@ However, as some many steps need not be repeated for obtaining the final results
 Again, consider that no hierarchical folder structure is needed when using the code on your machine. 
 
 Should you be interested in more information or in the data used (especially that used for the App), feel free to contact us.
-*leonard.berger@student.uni-tuebingen.de 
-*nico.schwarzer@student.uni-tuebingen.de 
+
+leonard.berger@student.uni-tuebingen.de 
+
+nico.schwarzer@student.uni-tuebingen.de 
 
 
 

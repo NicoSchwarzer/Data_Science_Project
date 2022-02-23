@@ -13,9 +13,9 @@ All files used for the project are to be found in this Repository. To introduce 
 2. Data Acquisition
    * static (Once conducted)
    * dynamic (Used for weekly updating)
-3. Analysis and Machine Learning (including preparatory files)
- a) Static_Initial_Analyses
- b) Dynamic_Updating_Analyses
+3. Analysis and Machine Learning
+   * Static_Initial_Analyses (All Analysis steps not used in updating loop)
+   * Dynamic_Updating_Analyses (All Analysis steps used in updating loop)
 4. Shiny App Files (Server, ui, global)
 
 Also note that when coding the Project, all files and data were saved in one folder. Hence, the folder structure laid out above is not reflected when sourcing in other files.
@@ -29,10 +29,8 @@ However, as some many steps need not be repeated for obtaining the final results
 Again, consider that no hierarchical folder structure is needed when using the code on your machine. 
 
 Should you be interested in more information or in the data used (especially that used for the App), feel free to contact us.
-
-leonard.berger@student.uni-tuebingen.de 
-
-nico.schwarzer@student.uni-tuebingen.de 
+*leonard.berger@student.uni-tuebingen.de 
+*nico.schwarzer@student.uni-tuebingen.de 
 
 
 

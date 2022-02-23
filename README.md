@@ -9,14 +9,14 @@ For more info, consult the information buttons on the afore-mentioned App.
 
 All files used for the project are to be found in this Repository. To introduce a logical structure and enable a better overview, all files have been added to folders. The following folders thusly exist:
 
-1) Functions to be sourced 
-2) Data Acquisition
- *a) static (Once conducted)
- *b) dynamic (Used for weekly updating)
-3) Analysis and Machine Learning (including preparatory files)
+1. Functions to be sourced 
+2. Data Acquisition
+   * static (Once conducted)
+   * dynamic (Used for weekly updating)
+3. Analysis and Machine Learning (including preparatory files)
  a) Static_Initial_Analyses
  b) Dynamic_Updating_Analyses
-4) Shiny App Files (Server, ui, global)
+4. Shiny App Files (Server, ui, global)
 
 Also note that when coding the Project, all files and data were saved in one folder. Hence, the folder structure laid out above is not reflected when sourcing in other files.
 

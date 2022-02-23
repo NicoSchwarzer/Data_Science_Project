@@ -1,7 +1,7 @@
 # Data_Science_Project
 
 Welcome to the GitHub Repo of our Data Science Project. 
-The latter was developed by Leonard Berger and Nico Schwarzer in the context of the M.Sc. Data Science in Business and Economics at Tübingen University. The goal of this Project is to set up an end-to-end Analytics Workflow. We have scrutenized the development of the Lyrics of popular Songs using NLP techniques. The final result of this Project is a Web Application which can be accessed here: bit.ly/natural_LYRICS_processing
+The latter was developed by Leonard Berger and Nico Schwarzer in the context of the M.Sc. Data Science in Business and Economics at Tübingen University. The goal of this Project is to set up an end-to-end Analytics Workflow. We have scrutenized the development of the Lyrics of popular Songs using NLP techniques. The final result of this Project is a Web Application which can be accessed here: https://bit.ly/natural_LYRICS_processing
 For more info, consult the information buttons on the afore-mentioned App.
 
 

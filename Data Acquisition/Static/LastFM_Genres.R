@@ -21,7 +21,7 @@ df <- distinct(df)
 ## Meta Info 
 
 fm_url <- "http://ws.audioscrobbler.com/2.0/?method=track.getInfo&api_key="
-api_key_last_fm <- "a2e1207d25ce4237d86ded2d073fabea"
+api_key_last_fm <- "XX"
 string_1 <- "&artist="
 string_2 <- "&track="
 string_3 <- "&format=json"

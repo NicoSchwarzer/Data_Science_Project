@@ -80,17 +80,17 @@ base_url <- "https://www.billboard.com/charts/hot-100/"
 
 ### Spotify API
 
-Sys.setenv(SPOTIFY_CLIENT_ID = "a9fc91d2beb445c5869d0ea04496f606")
-Sys.setenv(SPOTIFY_CLIENT_SECRET = "384c5bf72d3d4e85ac5b906258cadd9a")
+Sys.setenv(SPOTIFY_CLIENT_ID = "XX")
+Sys.setenv(SPOTIFY_CLIENT_SECRET = "XX")
 get_spotify_access_token()
 
 ### Genius API
 # Nicos token
-Sys.setenv(GENIUS_API_TOKEN = "iZdkkCTGhwiZKyjrW6NjTaWhAML-6clc2yg2o77_BCn8CPcEyly423GM77Y3_KZk")
+Sys.setenv(GENIUS_API_TOKEN = "XX")
 genius_token()
 
-# Leos token
-#Sys.setenv(GENIUS_API_TOKEN = "V0YxmAF_FAVWyTard84m4oAB5vhcyaIy7N-Uw24IGv8bcwH7chcgfpH-7FB7Mc5WL2uAeehKM8WgtNr9t_Sx0g")
+# Leos token - do not use
+#Sys.setenv(GENIUS_API_TOKEN = "XX")
 #genius_token()
 
 
@@ -98,7 +98,7 @@ genius_token()
 ### Last FM API
 
 fm_url <- "http://ws.audioscrobbler.com/2.0/?method=track.getInfo&api_key="
-api_key_last_fm <- "a2e1207d25ce4237d86ded2d073fabea"
+api_key_last_fm <- "XX"
 string_1 <- "&artist="
 string_2 <- "&track="
 string_3 <- "&format=json"

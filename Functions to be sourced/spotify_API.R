@@ -26,8 +26,8 @@ library(foreach)
 #library(doMC)
 
 
-Sys.setenv(SPOTIFY_CLIENT_ID = "a9fc91d2beb445c5869d0ea04496f606")
-Sys.setenv(SPOTIFY_CLIENT_SECRET = "384c5bf72d3d4e85ac5b906258cadd9a")
+Sys.setenv(SPOTIFY_CLIENT_ID = "XX")
+Sys.setenv(SPOTIFY_CLIENT_SECRET = "XX")
 
 get_spotify_access_token()
 

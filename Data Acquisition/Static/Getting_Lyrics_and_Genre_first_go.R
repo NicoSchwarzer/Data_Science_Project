@@ -54,13 +54,13 @@ library(foreach)
 
 ### Spotify API
 
-Sys.setenv(SPOTIFY_CLIENT_ID = "a9fc91d2beb445c5869d0ea04496f606")
-Sys.setenv(SPOTIFY_CLIENT_SECRET = "384c5bf72d3d4e85ac5b906258cadd9a")
+Sys.setenv(SPOTIFY_CLIENT_ID = "XX")
+Sys.setenv(SPOTIFY_CLIENT_SECRET = "XX")
 get_spotify_access_token()
 
 ### Genius API
 
-Sys.setenv(GENIUS_API_TOKEN = "iZdkkCTGhwiZKyjrW6NjTaWhAML-6clc2yg2o77_BCn8CPcEyly423GM77Y3_KZk")
+Sys.setenv(GENIUS_API_TOKEN = "XX")
 genius_token()
 
 

@@ -5,12 +5,12 @@
 
 
 fm_url <- "http://ws.audioscrobbler.com/2.0/?method=track.getInfo&api_key="
-api_key_last_fm <- "a2e1207d25ce4237d86ded2d073fabea"
+api_key_last_fm <- "XX"
 string_1 <- "&artist="
 string_2 <- "&track="
 string_3 <- "&format=json"
 
-## Audio DB API
+## Audio DB API - no api key :)
 
 string_1a <- "http://www.theaudiodb.com/api/v1/json/523532/searchtrack.php?s="
 string_2a <- "&t="

@@ -22,7 +22,7 @@ Also note that when coding the Project, all files and data were saved in one fol
 
 ## Information on Re-Coding
 
-With the help of the files above and the corresponding data, it is principally possible to re-code almost (all) steps (with the exception of those relying on deprecated methods or changed website Set-Ups). The datasets we used are vast and therefore not present here - contact us for a link to a Dropbox!
+With the help of the files above and the corresponding data, it is principally possible to re-code almost all steps (with the exception of those relying on deprecated methods or changed website Set-Ups). The datasets we used are vast and therefore not present here - contact us for a link to a Dropbox!
 
 However, as most steps need not be repeated for obtaining the final results (such as e.g. the Acquisition of the Historical Data or Model Training) and would take multiple days and sometimes rely on deprecated methods, we highly recommend to simply save the files in the 'Shiny App Files' folder together with the corresponding data and then run the App - this should work easily!
 
